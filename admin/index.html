@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理员仪表板 - LearnSync</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles -->
+    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="top-navbar">
+        <div class="navbar-left">
+            <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="navbar-brand ms-2">
+                <i class="bi bi-shield-check text-warning me-2"></i>管理员仪表板
+            </span>
+        </div>
+        <div class="navbar-right">
+            <!-- 主题切换按钮 -->
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+            <!-- 用户菜单 -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="currentUserName">管理员</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="../user/dashboard.html"><i class="bi bi-house-door"></i> 用户视图</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> 退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="index.html" class="sidebar-logo">
+                    <i class="bi bi-shield-check text-warning"></i>
+                    LearnSync Admin
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="index.html" class="active">
+                            <i class="bi bi-speedometer2"></i>
+                            仪表板
+                        </a>
+                    </li>
+                    <li>
+                        <a href="users.html">
+                            <i class="bi bi-people"></i>
+                            用户管理
+                            <span class="badge" id="userCount">0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="tasks.html">
+                            <i class="bi bi-list-task"></i>
+                            任务管理
+                        </a>
+                    </li>
+                    <li>
+                        <a href="resources.html">
+                            <i class="bi bi-folder"></i>
+                            资源管理
+                        </a>
+                    </li>
+                    <li>
+                        <a href="stats.html">
+                            <i class="bi bi-graph-up"></i>
+                            系统统计
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-user">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar bg-warning" id="userAvatar">A</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">管理员</div>
+                        <div class="user-role">系统管理员</div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.href='../user/dashboard.html'">
+                        <i class="bi bi-house"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">
+                        <i class="bi bi-power"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="content-area">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">管理员仪表板</h1>
+                        <p class="page-subtitle">系统概览和管理</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline-warning me-2" onclick="refreshData()">
+                            <i class="bi bi-arrow-clockwise"></i> 刷新数据
+                        </button>
+                        <button class="btn btn-primary" onclick="exportSystemData()">
+                            <i class="bi bi-download"></i> 导出系统数据
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 系统概览统计卡片 -->
+                <div class="stats-grid mb-4" id="systemStats">
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon primary">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-arrow-up"></i>
+                                <span id="userChange">+0</span>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalUsers">0</div>
+                        <div class="stats-label">总用户数</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon success">
+                                <i class="bi bi-list-task"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-activity"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalTasks">0</div>
+                        <div class="stats-label">总任务数</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon warning">
+                                <i class="bi bi-folder"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-plus-circle"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalResources">0</div>
+                        <div class="stats-label">总资源数</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon info">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-calendar-week"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalProgress">0</div>
+                        <div class="stats-label">总进度记录</div>
+                    </div>
+                </div>
+
+                <!-- 快速操作区域 -->
+                <div class="row mb-4">
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="bi bi-person-plus text-primary" style="font-size: 2rem;"></i>
+                                <h6 class="card-title mt-2">创建用户</h6>
+                                <p class="card-text text-muted small">添加新的系统用户</p>
+                                <button class="btn btn-primary btn-sm" onclick="createNewUser()">
+                                    <i class="bi bi-plus"></i> 创建
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="bi bi-bell text-warning" style="font-size: 2rem;"></i>
+                                <h6 class="card-title mt-2">系统通知</h6>
+                                <p class="card-text text-muted small">发送系统通知</p>
+                                <button class="btn btn-warning btn-sm" onclick="sendNotification()">
+                                    <i class="bi bi-envelope"></i> 通知
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="bi bi-database text-success" style="font-size: 2rem;"></i>
+                                <h6 class="card-title mt-2">数据备份</h6>
+                                <p class="card-text text-muted small">备份系统数据</p>
+                                <button class="btn btn-success btn-sm" onclick="backupData()">
+                                    <i class="bi bi-download"></i> 备份
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-sm-6">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <i class="bi bi-gear text-info" style="font-size: 2rem;"></i>
+                                <h6 class="card-title mt-2">系统设置</h6>
+                                <p class="card-text text-muted small">配置系统参数</p>
+                                <button class="btn btn-info btn-sm" onclick="systemSettings()">
+                                    <i class="bi bi-sliders"></i> 设置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容网格 -->
+                <div class="content-grid two-columns">
+                    <!-- 左侧内容 -->
+                    <div>
+                        <!-- 用户活跃度图表 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">用户活跃度趋势</h5>
+                                <div class="chart-controls">
+                                    <select class="form-select form-select-sm" id="activityTimeRange" onchange="updateActivityChart()">
+                                        <option value="7">最近7天</option>
+                                        <option value="30" selected>最近30天</option>
+                                        <option value="90">最近3个月</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="userActivityChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 任务完成情况 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">任务完成情况</h5>
+                                <div class="chart-controls">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTaskChart()">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="taskCompletionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧内容 -->
+                    <div>
+                        <!-- 最新用户 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">最新用户</h5>
+                                <a href="users.html" class="btn btn-sm btn-outline-primary">查看全部</a>
+                            </div>
+                            <div id="recentUsersList">
+                                <!-- 最新用户列表将通过JavaScript动态加载 -->
+                                <div class="empty-state">
+                                    <i class="bi bi-people"></i>
+                                    <h6>暂无新用户</h6>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 系统状态 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">系统状态</h5>
+                                <div class="chart-controls">
+                                    <span class="badge bg-success" id="systemStatus">正常运行</span>
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="stats-value text-success" id="activeUsersCount">0</div>
+                                        <div class="text-muted small">活跃用户</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="stats-value text-info" id="todayTasksCount">0</div>
+                                        <div class="text-muted small">今日任务</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="stats-value text-warning" id="todayProgressCount">0</div>
+                                        <div class="text-muted small">今日进度</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center">
+                                        <div class="stats-value text-primary" id="storageUsed">0KB</div>
+                                        <div class="text-muted small">存储使用</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 快速日志 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">系统日志</h5>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="viewFullLogs()">
+                                    <i class="bi bi-journal-text"></i> 完整日志
+                                </button>
+                            </div>
+                            <div class="progress-timeline" id="systemLogs">
+                                <!-- 系统日志将通过JavaScript动态加载 -->
+                                <div class="empty-state">
+                                    <i class="bi bi-journal-text"></i>
+                                    <h6>暂无系统日志</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 创建用户模态框 -->
+    <div class="modal fade" id="createUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">创建新用户</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createUserForm">
+                        <div class="mb-3">
+                            <label for="newUsername" class="form-label">用户名 *</label>
+                            <input type="text" class="form-control" id="newUsername" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newEmail" class="form-label">邮箱 *</label>
+                            <input type="email" class="form-control" id="newEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">密码 *</label>
+                            <input type="password" class="form-control" id="newPassword" required>
+                            <div class="form-text">留空将生成随机密码</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="newRole" class="form-label">用户角色 *</label>
+                            <select class="form-select" id="newRole" required>
+                                <option value="user">普通用户</option>
+                                <option value="admin">管理员</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNewUser()">创建用户</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/md5.min.js"></script>
+    <script src="../lib/chart.min.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/taskManager.js"></script>
+    <script src="../js/chartUtils.js"></script>
+
+    <!-- Admin specific JavaScript -->
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let systemData = null;
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态和权限
+            if (!Auth.isLoggedIn() || !Auth.isAdmin()) {
+                alert('您没有管理员权限，正在重定向...');
+                window.location.href = '../index.html';
+                return;
+            }
+
+            // 初始化管理员仪表板
+            initializeAdminDashboard();
+        });
+
+        /**
+         * 初始化管理员仪表板
+         */
+        function initializeAdminDashboard() {
+            currentUser = Auth.getCurrentUser();
+            loadUserInfo();
+            loadSystemStats();
+            loadRecentUsers();
+            loadSystemLogs();
+            initializeCharts();
+            updateSystemStatus();
+        }
+
+        /**
+         * 加载用户信息
+         */
+        function loadUserInfo() {
+            if (currentUser) {
+                document.getElementById('currentUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserName').textContent = currentUser.username;
+                document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            }
+        }
+
+        /**
+         * 加载系统统计数据
+         */
+        function loadSystemStats() {
+            // 获取用户统计
+            const users = Storage.get('users');
+            const adminUsers = users.filter(u => u.role === 'admin');
+            const regularUsers = users.filter(u => u.role === 'user');
+
+            document.getElementById('totalUsers').textContent = users.length;
+            document.getElementById('userCount').textContent = users.length;
+
+            // 获取任务统计
+            const tasks = Storage.get('tasks');
+            document.getElementById('totalTasks').textContent = tasks.length;
+
+            // 获取资源统计
+            const resources = Storage.get('resources');
+            document.getElementById('totalResources').textContent = resources.length;
+
+            // 获取进度统计
+            const progress = Storage.get('progress');
+            document.getElementById('totalProgress').textContent = progress.length;
+
+            // 计算变化（这里简化为总量的5%）
+            document.getElementById('userChange').textContent = '+' + Math.floor(users.length * 0.05);
+
+            // 更新实时状态
+            updateRealtimeStats();
+        }
+
+        /**
+         * 更新实时统计数据
+         */
+        function updateRealtimeStats() {
+            const today = new Date().toISOString().split('T')[0];
+
+            // 计算活跃用户（最近7天有活动）
+            const progress = Storage.get('progress');
+            const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+            const activeUserIds = [...new Set(progress
+                .filter(p => new Date(p.completedAt) >= sevenDaysAgo)
+                .map(p => p.userId))];
+
+            document.getElementById('activeUsersCount').textContent = activeUserIds.length;
+
+            // 今日任务数
+            const tasks = Storage.get('tasks');
+            const todayTasks = tasks.filter(t => t.createdAt && t.createdAt.startsWith(today));
+            document.getElementById('todayTasksCount').textContent = todayTasks.length;
+
+            // 今日进度记录数
+            const todayProgress = progress.filter(p => p.completedAt && p.completedAt.startsWith(today));
+            document.getElementById('todayProgressCount').textContent = todayProgress.length;
+
+            // 计算存储使用量
+            const totalStorage = JSON.stringify(users) + JSON.stringify(tasks) +
+                               JSON.stringify(resources) + JSON.stringify(progress);
+            const storageKB = Math.round(totalStorage.length / 1024);
+            document.getElementById('storageUsed').textContent = storageKB > 1024 ?
+                Math.round(storageKB / 1024) + 'MB' : storageKB + 'KB';
+        }
+
+        /**
+         * 加载最新用户
+         */
+        function loadRecentUsers() {
+            const users = Storage.get('users');
+            const recentUsers = users
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 5);
+
+            const recentUsersList = document.getElementById('recentUsersList');
+
+            if (recentUsers.length === 0) {
+                recentUsersList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-people"></i>
+                        <h6>暂无新用户</h6>
+                    </div>
+                `;
+                return;
+            }
+
+            recentUsersList.innerHTML = recentUsers.map(user => `
+                <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded">
+                    <div class="d-flex align-items-center">
+                        <div class="user-avatar me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+                            ${user.username.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <div class="fw-bold">${user.username}</div>
+                            <small class="text-muted">${user.email}</small>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge ${user.role === 'admin' ? 'bg-warning' : 'bg-primary'}">
+                            ${user.role === 'admin' ? '管理员' : '用户'}
+                        </span>
+                        <small class="text-muted d-block">${formatDate(user.createdAt)}</small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 加载系统日志
+         */
+        function loadSystemLogs() {
+            // 模拟系统日志数据
+            const mockLogs = [
+                {
+                    type: 'info',
+                    message: '系统启动完成',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'success',
+                    message: '数据备份成功',
+                    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+                },
+                {
+                    type: 'warning',
+                    message: '用户登录尝试失败',
+                    timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+                }
+            ];
+
+            const logsContainer = document.getElementById('systemLogs');
+
+            if (mockLogs.length === 0) {
+                logsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-journal-text"></i>
+                        <h6>暂无系统日志</h6>
+                    </div>
+                `;
+                return;
+            }
+
+            logsContainer.innerHTML = mockLogs.map(log => `
+                <div class="progress-item">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="mb-1">
+                                <i class="bi bi-${getLogIcon(log.type)} text-${log.type}"></i>
+                                ${log.message}
+                            </h6>
+                        </div>
+                        <small class="text-muted">
+                            ${formatDateTime(log.timestamp)}
+                        </small>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 初始化图表
+         */
+        function initializeCharts() {
+            // 用户活跃度图表
+            updateUserActivityChart();
+
+            // 任务完成情况图表
+            updateTaskCompletionChart();
+        }
+
+        /**
+         * 更新用户活跃度图表
+         */
+        function updateUserActivityChart() {
+            const days = parseInt(document.getElementById('activityTimeRange').value);
+            const endDate = new Date();
+            const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+
+            // 模拟用户活跃度数据
+            const activityData = [];
+            for (let i = 0; i < days; i++) {
+                const date = new Date(startDate.getTime() + i * 24 * 60 * 60 * 1000);
+                activityData.push({
+                    date: date.toISOString().split('T')[0],
+                    activeUsers: Math.floor(Math.random() * 20) + 5,
+                    newUsers: Math.random() > 0.7 ? Math.floor(Math.random() * 3) + 1 : 0
+                });
+            }
+
+            const canvas = document.getElementById('userActivityChart');
+            if (!canvas) return;
+
+            if (window.userActivityChartInstance) {
+                window.userActivityChartInstance.destroy();
+            }
+
+            window.userActivityChartInstance = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: activityData.map(d => d.date),
+                    datasets: [
+                        {
+                            label: '活跃用户',
+                            data: activityData.map(d => d.activeUsers),
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: '新用户',
+                            data: activityData.map(d => d.newUsers),
+                            borderColor: '#198754',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * 更新任务完成情况图表
+         */
+        function updateTaskCompletionChart() {
+            const tasks = Storage.get('tasks');
+            const statusCounts = {
+                Todo: 0,
+                InProgress: 0,
+                Completed: 0
+            };
+
+            tasks.forEach(task => {
+                statusCounts[task.status] = (statusCounts[task.status] || 0) + 1;
+            });
+
+            const canvas = document.getElementById('taskCompletionChart');
+            if (!canvas) return;
+
+            if (window.taskCompletionChartInstance) {
+                window.taskCompletionChartInstance.destroy();
+            }
+
+            window.taskCompletionChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: ['待办', '进行中', '已完成'],
+                    datasets: [{
+                        data: [statusCounts.Todo, statusCounts.InProgress, statusCounts.Completed],
+                        backgroundColor: ['#6c757d', '#0dcaf0', '#198754']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        /**
+         * 更新系统状态
+         */
+        function updateSystemStatus() {
+            const statusElement = document.getElementById('systemStatus');
+
+            // 简单的状态检查
+            try {
+                // 检查存储
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+
+                // 检查必要的库
+                if (typeof Chart !== 'undefined' && typeof md5 !== 'undefined') {
+                    statusElement.textContent = '正常运行';
+                    statusElement.className = 'badge bg-success';
+                } else {
+                    statusElement.textContent = '库加载异常';
+                    statusElement.className = 'badge bg-warning';
+                }
+            } catch (error) {
+                statusElement.textContent = '系统异常';
+                statusElement.className = 'badge bg-danger';
+            }
+        }
+
+        /**
+         * 快速操作功能
+         */
+        function refreshData() {
+            loadSystemStats();
+            loadRecentUsers();
+            loadSystemLogs();
+            initializeCharts();
+            updateSystemStatus();
+            addSystemLog('info', '管理员刷新了系统数据');
+            alert('数据已刷新！');
+        }
+
+        function exportSystemData() {
+            const systemData = {
+                users: Storage.get('users'),
+                tasks: Storage.get('tasks'),
+                resources: Storage.get('resources'),
+                progress: Storage.get('progress'),
+                exportTime: new Date().toISOString(),
+                exportedBy: currentUser.username
+            };
+
+            const dataStr = JSON.stringify(systemData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `learnsync_system_backup_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            addSystemLog('success', '系统数据导出成功');
+            alert('系统数据导出成功！');
+        }
+
+        function createNewUser() {
+            const modal = new bootstrap.Modal(document.getElementById('createUserModal'));
+            modal.show();
+        }
+
+        function saveNewUser() {
+            const username = document.getElementById('newUsername').value.trim();
+            const email = document.getElementById('newEmail').value.trim();
+            const password = document.getElementById('newPassword').value;
+            const role = document.getElementById('newRole').value;
+
+            if (!username || !email) {
+                alert('请填写用户名和邮箱');
+                return;
+            }
+
+            const finalPassword = password || generateRandomPassword();
+            const result = Auth.register(username, email, finalPassword, role);
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('createUserModal')).hide();
+                document.getElementById('createUserForm').reset();
+                loadSystemStats();
+                loadRecentUsers();
+
+                if (!password) {
+                    alert(`用户创建成功！\n用户名：${username}\n密码：${finalPassword}\n请将密码安全地发送给用户。`);
+                } else {
+                    alert('用户创建成功！');
+                }
+
+                addSystemLog('success', `创建新用户：${username}`);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        function sendNotification() {
+            const message = prompt('请输入系统通知内容：');
+            if (message) {
+                // 这里可以实现实际的通知发送逻辑
+                alert(`通知已发送：${message}`);
+                addSystemLog('info', `发送系统通知：${message}`);
+            }
+        }
+
+        function backupData() {
+            exportSystemData();
+            addSystemLog('success', '执行系统数据备份');
+        }
+
+        function systemSettings() {
+            alert('系统设置功能开发中...');
+        }
+
+        function viewFullLogs() {
+            alert('完整日志查看功能开发中...');
+        }
+
+        /**
+         * 更新图表功能
+         */
+        function updateActivityChart() {
+            updateUserActivityChart();
+        }
+
+        function refreshTaskChart() {
+            updateTaskCompletionChart();
+        }
+
+        /**
+         * 辅助函数
+         */
+        function generateRandomPassword() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let password = '';
+            for (let i = 0; i < 12; i++) {
+                password += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return password;
+        }
+
+        function getLogIcon(type) {
+            const iconMap = {
+                info: 'info-circle',
+                success: 'check-circle',
+                warning: 'exclamation-triangle',
+                danger: 'x-circle'
+            };
+            return iconMap[type] || 'info-circle';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addSystemLog(type, message) {
+            // 这里可以实现实际的日志记录逻辑
+            console.log(`[${type.toUpperCase()}] ${message}: ${new Date().toISOString()}`);
+        }
+
+        /**
+         * 侧边栏和主题切换
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                Auth.logout();
+                window.location.href = '../index.html';
+            }
+        }
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // 页面加载时恢复主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        });
+
+        // 定期更新实时统计数据
+        setInterval(updateRealtimeStats, 30000); // 每30秒更新一次
+    </script>
+</body>
+</html>
