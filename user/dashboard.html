@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户仪表板 - LearnSync</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles -->
+    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="top-navbar">
+        <div class="navbar-left">
+            <!-- 侧边栏切换按钮（移动端） -->
+            <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="navbar-brand ms-2">LearnSync</span>
+        </div>
+        <div class="navbar-right">
+            <!-- 主题切换按钮 -->
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+            <!-- 用户菜单 -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="currentUserName">用户</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="profile.html"><i class="bi bi-person"></i> 个人资料</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> 退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="sidebar-logo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    LearnSync
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="dashboard.html" class="active">
+                            <i class="bi bi-house-door"></i>
+                            仪表板
+                        </a>
+                    </li>
+                    <li>
+                        <a href="tasks.html">
+                            <i class="bi bi-list-task"></i>
+                            我的任务
+                            <span class="badge" id="taskCount">0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="resources.html">
+                            <i class="bi bi-folder"></i>
+                            资源库
+                        </a>
+                    </li>
+                    <li>
+                        <a href="progress.html">
+                            <i class="bi bi-graph-up"></i>
+                            学习进度
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-user">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">用户名</div>
+                        <div class="user-role" id="sidebarUserRole">普通用户</div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.href='profile.html'">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">
+                        <i class="bi bi-power"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="content-area">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">仪表板</h1>
+                        <p class="page-subtitle">欢迎回来！这里是您的学习概览</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="window.location.href='tasks.html'">
+                            <i class="bi bi-plus-circle"></i> 新建任务
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 快速统计卡片 -->
+                <div class="stats-grid" id="statsGrid">
+                    <!-- 任务统计卡片 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon primary">
+                                <i class="bi bi-list-task"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-arrow-up"></i>
+                                <span id="taskChange">+0</span>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalTasks">0</div>
+                        <div class="stats-label">总任务数</div>
+                    </div>
+
+                    <!-- 进行中任务卡片 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon warning">
+                                <i class="bi bi-clock-history"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-activity"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="inProgressTasks">0</div>
+                        <div class="stats-label">进行中</div>
+                    </div>
+
+                    <!-- 已完成任务卡片 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon success">
+                                <i class="bi bi-check-circle"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-trophy"></i>
+                                <span id="completionRate">0%</span>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="completedTasks">0</div>
+                        <div class="stats-label">已完成</div>
+                    </div>
+
+                    <!-- 学习时间卡片 -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon info">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                            <div class="stats-change positive">
+                                <i class="bi bi-calendar-week"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="weeklyStudyTime">0</div>
+                        <div class="stats-label">本周学习(小时)</div>
+                    </div>
+                </div>
+
+                <!-- 内容网格 -->
+                <div class="content-grid two-columns">
+                    <!-- 左侧内容 -->
+                    <div>
+                        <!-- 最近任务 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">最近任务</h5>
+                                <a href="tasks.html" class="btn btn-sm btn-outline-primary">查看全部</a>
+                            </div>
+                            <div id="recentTasksList" class="task-list">
+                                <!-- 任务列表将通过JavaScript动态加载 -->
+                                <div class="empty-state">
+                                    <i class="bi bi-inbox"></i>
+                                    <h5>暂无任务</h5>
+                                    <p>点击"新建任务"开始添加您的学习任务</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任务状态分布图表 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">任务状态分布</h5>
+                                <div class="chart-controls">
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="refreshTaskStatusChart()">
+                                        <i class="bi bi-arrow-clockwise"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="taskStatusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧内容 -->
+                    <div>
+                        <!-- 即将到期的任务 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">即将到期</h5>
+                                <span class="badge bg-warning" id="overdueCount">0</span>
+                            </div>
+                            <div id="upcomingDeadlinesList">
+                                <!-- 即将到期任务列表将通过JavaScript动态加载 -->
+                                <div class="empty-state">
+                                    <i class="bi bi-calendar-check"></i>
+                                    <h5>无即将到期任务</h5>
+                                    <p>太棒了！当前没有紧急任务</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 学习时间趋势图表 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">学习时间趋势</h5>
+                                <div class="chart-controls">
+                                    <select class="form-select form-select-sm" id="timeRangeSelect" onchange="updateTimeChart()">
+                                        <option value="7">最近7天</option>
+                                        <option value="30">最近30天</option>
+                                        <option value="90">最近3个月</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="learningTimeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 快速操作 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">快速操作</h5>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button class="btn btn-outline-primary w-100" onclick="quickAddTask()">
+                                        <i class="bi bi-plus"></i> 快速添加任务
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-success w-100" onclick="quickAddResource()">
+                                        <i class="bi bi-folder-plus"></i> 添加资源
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-info w-100" onclick="recordStudyTime()">
+                                        <i class="bi bi-clock-fill"></i> 记录学习时间
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button class="btn btn-outline-warning w-100" onclick="viewProgress()">
+                                        <i class="bi bi-graph-up"></i> 查看进度
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 快速添加任务模态框 -->
+    <div class="modal fade" id="quickTaskModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">快速添加任务</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="quickTaskForm">
+                        <div class="mb-3">
+                            <label for="quickTaskTitle" class="form-label">任务标题</label>
+                            <input type="text" class="form-control" id="quickTaskTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickTaskPriority" class="form-label">优先级</label>
+                            <select class="form-select" id="quickTaskPriority">
+                                <option value="Low">低优先级</option>
+                                <option value="Medium" selected>中优先级</option>
+                                <option value="High">高优先级</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quickTaskDeadline" class="form-label">截止日期</label>
+                            <input type="date" class="form-control" id="quickTaskDeadline">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveQuickTask()">保存任务</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/md5.min.js"></script>
+    <script src="../lib/chart.min.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/taskManager.js"></script>
+    <script src="../js/progressTracker.js"></script>
+    <script src="../js/chartUtils.js"></script>
+
+    <!-- Dashboard specific JavaScript -->
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态
+            if (!Auth.isLoggedIn()) {
+                window.location.href = '../index.html';
+                return;
+            }
+
+            // 初始化仪表板
+            initializeDashboard();
+        });
+
+        /**
+         * 初始化仪表板
+         */
+        function initializeDashboard() {
+            loadUserInfo();
+            loadDashboardStats();
+            loadRecentTasks();
+            loadUpcomingDeadlines();
+            initializeCharts();
+        }
+
+        /**
+         * 加载用户信息
+         */
+        function loadUserInfo() {
+            const currentUser = Auth.getCurrentUser();
+            if (currentUser) {
+                document.getElementById('currentUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
+                document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            }
+        }
+
+        /**
+         * 加载仪表板统计数据
+         */
+        function loadDashboardStats() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            // 获取任务统计
+            const taskStats = TaskManager.getTaskStats(currentUser.id);
+            document.getElementById('totalTasks').textContent = taskStats.total;
+            document.getElementById('inProgressTasks').textContent = taskStats.byStatus.InProgress;
+            document.getElementById('completedTasks').textContent = taskStats.byStatus.Completed;
+            document.getElementById('completionRate').textContent = taskStats.completionRate + '%';
+            document.getElementById('taskCount').textContent = taskStats.byStatus.Todo + taskStats.byStatus.InProgress;
+
+            // 获取进度统计
+            const progressStats = ProgressTracker.getProgressStats(currentUser.id);
+            const weeklyHours = Math.round((progressStats.totalTimeSpent || 0) / 60 * 10) / 10;
+            document.getElementById('weeklyStudyTime').textContent = weeklyHours;
+
+            // 计算任务变化
+            const completedThisWeek = taskStats.completedThisWeek;
+            document.getElementById('taskChange').textContent = '+' + completedThisWeek;
+        }
+
+        /**
+         * 加载最近任务
+         */
+        function loadRecentTasks() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const recentTasks = TaskManager.getUserTasks(currentUser.id, {
+                sortBy: 'createdAt',
+                sortOrder: 'desc'
+            }).slice(0, 5);
+
+            const tasksList = document.getElementById('recentTasksList');
+
+            if (recentTasks.length === 0) {
+                tasksList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h5>暂无任务</h5>
+                        <p>点击"新建任务"开始添加您的学习任务</p>
+                    </div>
+                `;
+                return;
+            }
+
+            tasksList.innerHTML = recentTasks.map(task => `
+                <div class="task-card mb-2">
+                    <div class="task-header">
+                        <h6 class="task-title mb-1">${task.title}</h6>
+                        <span class="priority-${task.priority.toLowerCase()}">${getPriorityText(task.priority)}</span>
+                    </div>
+                    <div class="task-meta">
+                        <span class="status-${task.status.toLowerCase()}">${getStatusText(task.status)}</span>
+                        ${task.deadline ? `<small class="text-muted"><i class="bi bi-calendar"></i> ${formatDate(task.deadline)}</small>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 加载即将到期的任务
+         */
+        function loadUpcomingDeadlines() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const upcomingTasks = TaskManager.getUpcomingDeadlines(currentUser.id, 7);
+            const overdueCount = upcomingTasks.filter(task => {
+                const deadline = new Date(task.deadline);
+                return deadline < new Date();
+            }).length;
+
+            document.getElementById('overdueCount').textContent = overdueCount;
+
+            const deadlinesList = document.getElementById('upcomingDeadlinesList');
+
+            if (upcomingTasks.length === 0) {
+                deadlinesList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-calendar-check"></i>
+                        <h5>无即将到期任务</h5>
+                        <p>太棒了！当前没有紧急任务</p>
+                    </div>
+                `;
+                return;
+            }
+
+            deadlinesList.innerHTML = upcomingTasks.map(task => {
+                const deadline = new Date(task.deadline);
+                const now = new Date();
+                const daysDiff = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+                const isUrgent = daysDiff <= 1 || deadline < now;
+
+                return `
+                    <div class="task-card mb-2 ${isUrgent ? 'border-danger' : ''}">
+                        <div class="task-header">
+                            <h6 class="task-title mb-1">${task.title}</h6>
+                            <span class="priority-${task.priority.toLowerCase()}">${getPriorityText(task.priority)}</span>
+                        </div>
+                        <div class="task-meta">
+                            <small class="${isUrgent ? 'text-danger' : 'text-muted'}">
+                                <i class="bi bi-calendar${isUrgent ? '-x' : ''}"></i>
+                                ${deadline < now ? '已过期' : daysDiff === 0 ? '今天到期' : daysDiff === 1 ? '明天到期' : `${daysDiff}天后到期`}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * 初始化图表
+         */
+        function initializeCharts() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            // 任务状态饼图
+            const taskStats = TaskManager.getTaskStats(currentUser.id);
+            ChartUtils.createTaskStatusPieChart('taskStatusChart', taskStats, {
+                title: false
+            });
+
+            // 学习时间趋势图
+            updateTimeChart();
+        }
+
+        /**
+         * 更新学习时间图表
+         */
+        function updateTimeChart() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const days = parseInt(document.getElementById('timeRangeSelect').value);
+            const endDate = new Date();
+            const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+
+            const progressData = ProgressTracker.getUserProgress(currentUser.id, {
+                dateFrom: startDate.toISOString(),
+                dateTo: endDate.toISOString()
+            });
+
+            // 准备图表数据
+            const chartData = progressData.map(record => ({
+                date: record.completedAt.split('T')[0],
+                timeSpent: record.timeSpent || 0
+            }));
+
+            ChartUtils.createLearningTimeLineChart('learningTimeChart', chartData, {
+                title: false,
+                timeUnit: days <= 7 ? 'day' : days <= 30 ? 'day' : 'week'
+            });
+        }
+
+        /**
+         * 刷新任务状态图表
+         */
+        function refreshTaskStatusChart() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const taskStats = TaskManager.getTaskStats(currentUser.id);
+            ChartUtils.updateChart('taskStatusChart', {
+                labels: ['待办', '进行中', '已完成'],
+                datasets: [{
+                    data: [
+                        taskStats.byStatus.Todo || 0,
+                        taskStats.byStatus.InProgress || 0,
+                        taskStats.byStatus.Completed || 0
+                    ],
+                    backgroundColor: [
+                        ChartUtils.defaultColors.secondary,
+                        ChartUtils.defaultColors.info,
+                        ChartUtils.defaultColors.success
+                    ],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            });
+        }
+
+        /**
+         * 切换侧边栏（移动端）
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        /**
+         * 快速添加任务
+         */
+        function quickAddTask() {
+            const modal = new bootstrap.Modal(document.getElementById('quickTaskModal'));
+            modal.show();
+        }
+
+        /**
+         * 保存快速任务
+         */
+        function saveQuickTask() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const title = document.getElementById('quickTaskTitle').value.trim();
+            const priority = document.getElementById('quickTaskPriority').value;
+            const deadline = document.getElementById('quickTaskDeadline').value;
+
+            if (!title) {
+                alert('请输入任务标题');
+                return;
+            }
+
+            const result = TaskManager.createTask({
+                title: title,
+                priority: priority,
+                deadline: deadline,
+                userId: currentUser.id
+            });
+
+            if (result.success) {
+                alert('任务添加成功！');
+                bootstrap.Modal.getInstance(document.getElementById('quickTaskModal')).hide();
+                document.getElementById('quickTaskForm').reset();
+                loadDashboardStats();
+                loadRecentTasks();
+                loadUpcomingDeadlines();
+                refreshTaskStatusChart();
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 快速添加资源
+         */
+        function quickAddResource() {
+            window.location.href = 'resources.html?action=add';
+        }
+
+        /**
+         * 记录学习时间
+         */
+        function recordStudyTime() {
+            window.location.href = 'progress.html?action=record';
+        }
+
+        /**
+         * 查看进度
+         */
+        function viewProgress() {
+            window.location.href = 'progress.html';
+        }
+
+        /**
+         * 处理用户登出
+         */
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                Auth.logout();
+                window.location.href = '../index.html';
+            }
+        }
+
+        /**
+         * 获取优先级文本
+         */
+        function getPriorityText(priority) {
+            const priorityMap = {
+                'High': '高',
+                'Medium': '中',
+                'Low': '低'
+            };
+            return priorityMap[priority] || priority;
+        }
+
+        /**
+         * 获取状态文本
+         */
+        function getStatusText(status) {
+            const statusMap = {
+                'Todo': '待办',
+                'InProgress': '进行中',
+                'Completed': '已完成'
+            };
+            return statusMap[status] || status;
+        }
+
+        /**
+         * 格式化日期
+         */
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // 更新图标
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // 页面加载时恢复主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        });
+    </script>
+</body>
+</html>
