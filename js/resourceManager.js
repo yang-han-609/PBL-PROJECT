@@ -440,7 +440,7 @@ class ResourceManager {
         }
     }
 
-    
+
     /**
      * 切换收藏状态
      * @param {string} resourceId - 资源ID
@@ -710,6 +710,7 @@ class ResourceManager {
         return iconMap[type] || 'bi-link-45deg';
     }
 }
+
 
 // 创建全局资源管理器实例
 const ResourceManager = new ResourceManager();
