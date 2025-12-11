@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资源库 - LearnSync</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles -->
+    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="top-navbar">
+        <div class="navbar-left">
+            <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="navbar-brand ms-2">资源库</span>
+        </div>
+        <div class="navbar-right">
+            <!-- 主题切换按钮 -->
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+            <!-- 用户菜单 -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="currentUserName">用户</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="dashboard.html"><i class="bi bi-house-door"></i> 仪表板</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> 退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="sidebar-logo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    LearnSync
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="bi bi-house-door"></i>
+                            仪表板
+                        </a>
+                    </li>
+                    <li>
+                        <a href="tasks.html">
+                            <i class="bi bi-list-task"></i>
+                            我的任务
+                        </a>
+                    </li>
+                    <li>
+                        <a href="resources.html" class="active">
+                            <i class="bi bi-folder"></i>
+                            资源库
+                        </a>
+                    </li>
+                    <li>
+                        <a href="progress.html">
+                            <i class="bi bi-graph-up"></i>
+                            学习进度
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-user">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">用户名</div>
+                        <div class="user-role" id="sidebarUserRole">普通用户</div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                        <i class="bi bi-house"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">
+                        <i class="bi bi-power"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="content-area">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">资源库</h1>
+                        <p class="page-subtitle">管理您的学习资源</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline-secondary me-2" onclick="exportResources()">
+                            <i class="bi bi-download"></i> 导出
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddResourceModal()">
+                            <i class="bi bi-plus-circle"></i> 添加资源
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 资源统计卡片 -->
+                <div class="stats-grid mb-4" id="resourceStats">
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon primary">
+                                <i class="bi bi-folder"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalResources">0</div>
+                        <div class="stats-label">总资源数</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon warning">
+                                <i class="bi bi-star"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="favoriteResources">0</div>
+                        <div class="stats-label">收藏资源</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon success">
+                                <i class="bi bi-eye"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalAccess">0</div>
+                        <div class="stats-label">总访问次数</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon info">
+                                <i class="bi bi-plus-circle"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="recentlyAdded">0</div>
+                        <div class="stats-label">本周新增</div>
+                    </div>
+                </div>
+
+                <!-- 筛选和搜索区域 -->
+                <div class="filters-section mb-4">
+                    <div class="filters-row">
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" class="form-control" id="searchInput" placeholder="搜索资源..." onkeyup="handleSearch()">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">类型</label>
+                            <select class="form-select" id="typeFilter" onchange="handleFilter()">
+                                <option value="">全部类型</option>
+                                <option value="article">文章</option>
+                                <option value="video">视频</option>
+                                <option value="book">书籍</option>
+                                <option value="link">链接</option>
+                                <option value="course">课程</option>
+                                <option value="document">文档</option>
+                                <option value="tool">工具</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">分类</label>
+                            <select class="form-select" id="categoryFilter" onchange="handleFilter()">
+                                <option value="">全部分类</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">难度</label>
+                            <select class="form-select" id="difficultyFilter" onchange="handleFilter()">
+                                <option value="">全部难度</option>
+                                <option value="beginner">初级</option>
+                                <option value="intermediate">中级</option>
+                                <option value="advanced">高级</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">排序</label>
+                            <select class="form-select" id="sortByFilter" onchange="handleFilter()">
+                                <option value="createdAt">创建时间</option>
+                                <option value="name">名称</option>
+                                <option value="type">类型</option>
+                                <option value="rating">评分</option>
+                                <option value="accessCount">访问次数</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 标签云 -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">标签云</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="tag-cloud" id="tagCloud">
+                            <!-- 标签将通过JavaScript动态加载 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 资源列表 -->
+                <div id="resourcesList">
+                    <!-- 资源列表将通过JavaScript动态加载 -->
+                    <div class="empty-state">
+                        <i class="bi bi-folder-x"></i>
+                        <h5>暂无资源</h5>
+                        <p>点击"添加资源"开始添加您的学习资源</p>
+                        <button class="btn btn-primary" onclick="openAddResourceModal()">
+                            <i class="bi bi-plus-circle"></i> 添加资源
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 资源模态框 -->
+    <div class="modal fade" id="resourceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resourceModalTitle">添加资源</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="resourceForm">
+                        <input type="hidden" id="resourceId">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="resourceName" class="form-label">资源名称 *</label>
+                                    <input type="text" class="form-control" id="resourceName" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="resourceType" class="form-label">资源类型 *</label>
+                                    <select class="form-select" id="resourceType" required onchange="updateTypeIcon()">
+                                        <option value="">请选择类型</option>
+                                        <option value="article">文章</option>
+                                        <option value="video">视频</option>
+                                        <option value="book">书籍</option>
+                                        <option value="link">链接</option>
+                                        <option value="course">课程</option>
+                                        <option value="document">文档</option>
+                                        <option value="tool">工具</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resourceUrl" class="form-label">资源URL *</label>
+                            <input type="url" class="form-control" id="resourceUrl" required placeholder="https://example.com">
+                        </div>
+                        <div class="mb-3">
+                            <label for="resourceDescription" class="form-label">资源描述</label>
+                            <textarea class="form-control" id="resourceDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="resourceCategory" class="form-label">分类</label>
+                                    <input type="text" class="form-control" id="resourceCategory" placeholder="如：前端、后端、算法">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="resourceDifficulty" class="form-label">难度</label>
+                                    <select class="form-select" id="resourceDifficulty">
+                                        <option value="">请选择难度</option>
+                                        <option value="beginner">初级</option>
+                                        <option value="intermediate">中级</option>
+                                        <option value="advanced">高级</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="resourceRating" class="form-label">评分 (1-5)</label>
+                                    <select class="form-select" id="resourceRating">
+                                        <option value="">未评分</option>
+                                        <option value="1">1星</option>
+                                        <option value="2">2星</option>
+                                        <option value="3">3星</option>
+                                        <option value="4">4星</option>
+                                        <option value="5">5星</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="resourceTags" class="form-label">标签（用逗号分隔）</label>
+                            <input type="text" class="form-control" id="resourceTags" placeholder="JavaScript, 学习, 教程">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="resourceFavorite">
+                            <label class="form-check-label" for="resourceFavorite">
+                                添加到收藏
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="deleteResourceBtn" onclick="deleteResource()" style="display: none;">
+                        <i class="bi bi-trash"></i> 删除
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveResource()">保存资源</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/md5.min.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/resourceManager.js"></script>
+    <script src="../lib/chart.min.js"></script>
+    <script src="../js/chartUtils.js"></script>
+
+    <!-- Resources specific JavaScript -->
+    <script>
+        // 全局变量
+        let currentResources = [];
+        let currentFilters = {
+            search: '',
+            type: '',
+            category: '',
+            difficulty: '',
+            sortBy: 'createdAt',
+            sortOrder: 'desc'
+        };
+        let selectedTags = [];
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态
+            if (!Auth.isLoggedIn()) {
+                window.location.href = '../index.html';
+                return;
+            }
+
+            // 初始化资源页面
+            initializeResourcesPage();
+        });
+
+        /**
+         * 初始化资源页面
+         */
+        function initializeResourcesPage() {
+            loadUserInfo();
+            loadResources();
+            loadResourceStats();
+            loadTags();
+            loadCategories();
+        }
+
+        /**
+         * 加载用户信息
+         */
+        function loadUserInfo() {
+            const currentUser = Auth.getCurrentUser();
+            if (currentUser) {
+                document.getElementById('currentUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
+                document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            }
+        }
+
+        /**
+         * 加载资源列表
+         */
+        function loadResources() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            currentResources = ResourceManager.getUserResources(currentUser.id, currentFilters);
+            renderResources();
+        }
+
+        /**
+         * 渲染资源列表
+         */
+        function renderResources() {
+            const resourcesList = document.getElementById('resourcesList');
+
+            if (currentResources.length === 0) {
+                resourcesList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-folder-x"></i>
+                        <h5>暂无资源</h5>
+                        <p>点击"添加资源"开始添加您的学习资源</p>
+                        <button class="btn btn-primary" onclick="openAddResourceModal()">
+                            <i class="bi bi-plus-circle"></i> 添加资源
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            resourcesList.innerHTML = '<div class="row g-4">' + currentResources.map(resource => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="resource-card">
+                        <div class="resource-header">
+                            <div class="resource-type-icon ${resource.type}">
+                                <i class="bi ${getResourceTypeIcon(resource.type)}"></i>
+                            </div>
+                            <div class="resource-info">
+                                <div class="resource-name">${resource.name}</div>
+                                <div class="text-muted small">${resource.type}</div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="openResource('${resource.id}')">
+                                        <i class="bi bi-box-arrow-up-right"></i> 打开资源
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="toggleFavorite('${resource.id}')">
+                                        <i class="bi bi-star${resource.isFavorite ? '-fill text-warning' : ''}"></i>
+                                        ${resource.isFavorite ? '取消收藏' : '添加收藏'}
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="openEditResourceModal('${resource.id}')">
+                                        <i class="bi bi-pencil"></i> 编辑
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="confirmDeleteResource('${resource.id}')">
+                                        <i class="bi bi-trash"></i> 删除
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        ${resource.description ? `<p class="text-muted small">${resource.description}</p>` : ''}
+                        <div class="resource-url">
+                            <small class="text-muted">${truncateUrl(resource.url)}</small>
+                        </div>
+                        <div class="resource-meta mt-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    ${resource.category ? `<span class="badge bg-secondary me-1">${resource.category}</span>` : ''}
+                                    ${resource.difficulty ? `<span class="badge bg-info me-1">${getDifficultyText(resource.difficulty)}</span>` : ''}
+                                    ${resource.rating ? `<span class="text-warning"><i class="bi bi-star-fill"></i> ${resource.rating}</span>` : ''}
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-eye"></i> ${resource.accessCount || 0}
+                                    ${resource.isFavorite ? '<i class="bi bi-star-fill text-warning ms-2"></i>' : ''}
+                                </small>
+                            </div>
+                        </div>
+                        ${resource.tags && resource.tags.length > 0 ? `
+                            <div class="resource-tags mt-2">
+                                ${resource.tags.map(tag => `<span class="tag ${selectedTags.includes(tag) ? 'active' : ''}" onclick="filterByTag('${tag}')">${tag}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('') + '</div>';
+        }
+
+        /**
+         * 加载资源统计
+         */
+        function loadResourceStats() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const stats = ResourceManager.getResourceStats(currentUser.id);
+            document.getElementById('totalResources').textContent = stats.total;
+            document.getElementById('favoriteResources').textContent = stats.favoriteCount;
+            document.getElementById('totalAccess').textContent = stats.totalAccessCount;
+            document.getElementById('recentlyAdded').textContent = stats.recentlyAdded;
+        }
+
+        /**
+         * 加载标签云
+         */
+        function loadTags() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const tags = ResourceManager.getAllTags(currentUser.id);
+            const tagCloud = document.getElementById('tagCloud');
+
+            if (tags.length === 0) {
+                tagCloud.innerHTML = '<p class="text-muted mb-0">暂无标签</p>';
+                return;
+            }
+
+            tagCloud.innerHTML = tags.slice(0, 20).map(tagData => `
+                <span class="tag ${selectedTags.includes(tagData.tag) ? 'active' : ''}"
+                      onclick="filterByTag('${tagData.tag}')"
+                      title="${tagData.count} 个资源">
+                    ${tagData.tag} (${tagData.count})
+                </span>
+            `).join('');
+        }
+
+        /**
+         * 加载分类列表
+         */
+        function loadCategories() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const resources = ResourceManager.getUserResources(currentUser.id);
+            const categories = [...new Set(resources.map(r => r.category).filter(c => c))];
+
+            const categoryFilter = document.getElementById('categoryFilter');
+            const currentValue = categoryFilter.value;
+
+            categoryFilter.innerHTML = '<option value="">全部分类</option>' +
+                categories.map(category => `<option value="${category}">${category}</option>`).join('');
+
+            categoryFilter.value = currentValue;
+        }
+
+        /**
+         * 处理搜索
+         */
+        function handleSearch() {
+            currentFilters.search = document.getElementById('searchInput').value;
+            loadResources();
+        }
+
+        /**
+         * 处理筛选
+         */
+        function handleFilter() {
+            currentFilters.type = document.getElementById('typeFilter').value;
+            currentFilters.category = document.getElementById('categoryFilter').value;
+            currentFilters.difficulty = document.getElementById('difficultyFilter').value;
+            currentFilters.sortBy = document.getElementById('sortByFilter').value;
+            loadResources();
+        }
+
+        /**
+         * 根据标签筛选
+         */
+        function filterByTag(tag) {
+            const index = selectedTags.indexOf(tag);
+            if (index > -1) {
+                selectedTags.splice(index, 1);
+            } else {
+                selectedTags.push(tag);
+            }
+
+            currentFilters.tags = selectedTags.length > 0 ? selectedTags : null;
+            loadResources();
+            loadTags();
+            renderResources(); // 重新渲染以更新标签状态
+        }
+
+        /**
+         * 打开添加资源模态框
+         */
+        function openAddResourceModal() {
+            document.getElementById('resourceModalTitle').textContent = '添加资源';
+            document.getElementById('deleteResourceBtn').style.display = 'none';
+            document.getElementById('resourceForm').reset();
+            document.getElementById('resourceId').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('resourceModal'));
+            modal.show();
+        }
+
+        /**
+         * 打开编辑资源模态框
+         */
+        function openEditResourceModal(resourceId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const resource = ResourceManager.getResource(resourceId, currentUser.id);
+            if (!resource) {
+                alert('资源不存在或无权限访问');
+                return;
+            }
+
+            document.getElementById('resourceModalTitle').textContent = '编辑资源';
+            document.getElementById('deleteResourceBtn').style.display = 'block';
+
+            // 填充表单数据
+            document.getElementById('resourceId').value = resource.id;
+            document.getElementById('resourceName').value = resource.name;
+            document.getElementById('resourceUrl').value = resource.url;
+            document.getElementById('resourceType').value = resource.type;
+            document.getElementById('resourceDescription').value = resource.description || '';
+            document.getElementById('resourceCategory').value = resource.category || '';
+            document.getElementById('resourceDifficulty').value = resource.difficulty || '';
+            document.getElementById('resourceRating').value = resource.rating || '';
+            document.getElementById('resourceTags').value = resource.tags ? resource.tags.join(', ') : '';
+            document.getElementById('resourceFavorite').checked = resource.isFavorite || false;
+
+            const modal = new bootstrap.Modal(document.getElementById('resourceModal'));
+            modal.show();
+        }
+
+        /**
+         * 保存资源
+         */
+        function saveResource() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const resourceId = document.getElementById('resourceId').value;
+            const resourceData = {
+                name: document.getElementById('resourceName').value.trim(),
+                url: document.getElementById('resourceUrl').value.trim(),
+                type: document.getElementById('resourceType').value,
+                description: document.getElementById('resourceDescription').value.trim(),
+                category: document.getElementById('resourceCategory').value.trim(),
+                difficulty: document.getElementById('resourceDifficulty').value,
+                rating: parseInt(document.getElementById('resourceRating').value) || 0,
+                tags: document.getElementById('resourceTags').value
+                    .split(',')
+                    .map(tag => tag.trim())
+                    .filter(tag => tag.length > 0),
+                isFavorite: document.getElementById('resourceFavorite').checked,
+                userId: currentUser.id
+            };
+
+            // 验证必填字段
+            if (!resourceData.name || !resourceData.url || !resourceData.type) {
+                alert('请填写资源名称、URL和类型');
+                return;
+            }
+
+            let result;
+            if (resourceId) {
+                // 更新资源
+                result = ResourceManager.updateResource(resourceId, resourceData, currentUser.id);
+            } else {
+                // 创建资源
+                result = ResourceManager.createResource(resourceData);
+            }
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('resourceModal')).hide();
+                loadResources();
+                loadResourceStats();
+                loadTags();
+                loadCategories();
+                alert(resourceId ? '资源更新成功！' : '资源添加成功！');
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 确认删除资源
+         */
+        function confirmDeleteResource(resourceId) {
+            if (confirm('确定要删除这个资源吗？此操作不可恢复。')) {
+                deleteResourceById(resourceId);
+            }
+        }
+
+        /**
+         * 删除资源
+         */
+        function deleteResource() {
+            const resourceId = document.getElementById('resourceId').value;
+            deleteResourceById(resourceId);
+        }
+
+        /**
+         * 根据ID删除资源
+         */
+        function deleteResourceById(resourceId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const result = ResourceManager.deleteResource(resourceId, currentUser.id);
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('resourceModal')).hide();
+                loadResources();
+                loadResourceStats();
+                loadTags();
+                loadCategories();
+                alert('资源删除成功！');
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 打开资源
+         */
+        function openResource(resourceId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const resource = ResourceManager.getResource(resourceId, currentUser.id);
+            if (!resource) {
+                alert('资源不存在或无权限访问');
+                return;
+            }
+
+            // 记录访问
+            ResourceManager.recordAccess(resourceId, currentUser.id);
+
+            // 打开资源
+            window.open(resource.url, '_blank');
+
+            // 刷新统计和列表
+            loadResourceStats();
+            renderResources();
+        }
+
+        /**
+         * 切换收藏状态
+         */
+        function toggleFavorite(resourceId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const result = ResourceManager.toggleFavorite(resourceId, currentUser.id);
+
+            if (result.success) {
+                loadResources();
+                loadResourceStats();
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 导出资源数据
+         */
+        function exportResources() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const csvData = ResourceManager.exportResources(currentUser.id, 'csv');
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `resources_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        /**
+         * 获取资源类型图标
+         */
+        function getResourceTypeIcon(type) {
+            const iconMap = {
+                article: 'bi-file-text',
+                video: 'bi-play-circle',
+                book: 'bi-book',
+                link: 'bi-link-45deg',
+                course: 'bi-mortarboard',
+                document: 'bi-file-earmark-pdf',
+                tool: 'bi-tools'
+            };
+            return iconMap[type] || 'bi-link-45deg';
+        }
+
+        /**
+         * 获取难度文本
+         */
+        function getDifficultyText(difficulty) {
+            const difficultyMap = {
+                beginner: '初级',
+                intermediate: '中级',
+                advanced: '高级'
+            };
+            return difficultyMap[difficulty] || difficulty;
+        }
+
+        /**
+         * 截断URL显示
+         */
+        function truncateUrl(url) {
+            if (url.length <= 50) return url;
+            return url.substring(0, 25) + '...' + url.substring(url.length - 20);
+        }
+
+        /**
+         * 更新类型图标预览
+         */
+        function updateTypeIcon() {
+            const type = document.getElementById('resourceType').value;
+            const iconMap = {
+                article: 'bi-file-text',
+                video: 'bi-play-circle',
+                book: 'bi-book',
+                link: 'bi-link-45deg',
+                course: 'bi-mortarboard',
+                document: 'bi-file-earmark-pdf',
+                tool: 'bi-tools'
+            };
+            console.log('Resource type changed to:', type, 'Icon:', iconMap[type]);
+        }
+
+        /**
+         * 切换侧边栏（移动端）
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        /**
+         * 处理用户登出
+         */
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                Auth.logout();
+                window.location.href = '../index.html';
+            }
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // 更新图标
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // 页面加载时恢复主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        });
+
+        // URL参数处理
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+
+            if (action === 'add') {
+                setTimeout(() => {
+                    openAddResourceModal();
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
