@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - LearnSync</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles for theme and general appearance -->
+    <link href="css/style.css" rel="stylesheet">
+    <!-- Auth-specific styles for login/register pages -->
+    <link href="css/auth.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Main container for registration page -->
+    <div class="auth-container">
+        <!-- Theme toggle button for dark/light mode switching -->
+        <div class="theme-toggle">
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+        </div>
+
+        <!-- Card containing registration form -->
+        <div class="auth-card">
+            <!-- Logo and title section -->
+            <div class="text-center mb-4">
+                <h1 class="logo">
+                    <i class="bi bi-mortarboard-fill text-primary"></i> LearnSync
+                </h1>
+                <p class="text-muted">智能学习任务管理平台</p>
+            </div>
+
+            <!-- Registration form with validation -->
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <h2 class="text-center mb-4">用户注册</h2>
+
+                <!-- Username input field -->
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="bi bi-person"></i> 用户名
+                    </label>
+                    <input type="text" class="form-control" id="username" required
+                           minlength="3" maxlength="20"
+                           placeholder="请输入3-20位用户名">
+                </div>
+
+                <!-- Email input field -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">
+                        <i class="bi bi-envelope"></i> 邮箱
+                    </label>
+                    <input type="email" class="form-control" id="email" required
+                           placeholder="请输入有效的邮箱地址">
+                </div>
+
+                <!-- Password input field -->
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="bi bi-lock"></i> 密码
+                    </label>
+                    <input type="password" class="form-control" id="password" required
+                           minlength="6" maxlength="30"
+                           placeholder="请输入6-30位密码">
+                </div>
+
+                <!-- Confirm password input field -->
+                <div class="mb-3">
+                    <label for="confirmPassword" class="form-label">
+                        <i class="bi bi-lock-fill"></i> 确认密码
+                    </label>
+                    <input type="password" class="form-control" id="confirmPassword" required
+                           placeholder="请再次输入密码">
+                </div>
+
+                <!-- User role selection (hidden by default, can be enabled for admin registration) -->
+                <div class="mb-3" style="display: none;">
+                    <label for="role" class="form-label">
+                        <i class="bi bi-shield-check"></i> 用户角色
+                    </label>
+                    <select class="form-control" id="role">
+                        <option value="user">普通用户</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+
+                <!-- Terms and conditions checkbox -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="agreeTerms" required>
+                    <label class="form-check-label" for="agreeTerms">
+                        我同意 <a href="#" class="text-decoration-none">服务条款</a> 和 <a href="#" class="text-decoration-none">隐私政策</a>
+                    </label>
+                </div>
+
+                <!-- Submit button for registration -->
+                <button type="submit" class="btn btn-primary w-100 mb-3">
+                    <i class="bi bi-person-plus"></i> 注册账号
+                </button>
+
+                <!-- Link to login page -->
+                <div class="text-center">
+                    <p class="mb-0">已有账号？ <a href="index.html" class="text-decoration-none">立即登录</a></p>
+                </div>
+            </form>
+
+            <!-- Error message display (hidden by default) -->
+            <div id="registerError" class="alert alert-danger mt-3" style="display: none;"></div>
+
+            <!-- Success message display (hidden by default) -->
+            <div id="registerSuccess" class="alert alert-success mt-3" style="display: none;"></div>
+        </div>
+
+        <!-- Footer with copyright information -->
+        <div class="auth-footer">
+            <p>&copy; 2024 LearnSync. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <!-- Bootstrap JS for interactive components -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- MD5 encryption library for password hashing -->
+    <script src="lib/md5.min.js"></script>
+    <!-- Authentication module for login/logout functionality -->
+    <script src="js/auth.js"></script>
+    <!-- Storage module for LocalStorage operations -->
+    <script src="js/storage.js"></script>
+
+    <!-- Registration functionality script -->
+    <script>
+        // 处理用户注册
+        function handleRegister(event) {
+            // 阻止表单默认提交行为
+            event.preventDefault();
+
+            // 获取表单输入值
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('role').value;
+            const agreeTerms = document.getElementById('agreeTerms').checked;
+
+            // 获取错误显示元素
+            const errorDiv = document.getElementById('registerError');
+            const successDiv = document.getElementById('registerSuccess');
+
+            // 清除之前的消息
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+
+            // 验证密码匹配
+            if (password !== confirmPassword) {
+                errorDiv.textContent = '两次输入的密码不一致！';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // 验证用户名长度
+            if (username.length < 3 || username.length > 20) {
+                errorDiv.textContent = '用户名长度必须在3-20个字符之间！';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // 验证密码长度
+            if (password.length < 6 || password.length > 30) {
+                errorDiv.textContent = '密码长度必须在6-30个字符之间！';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // 尝试注册用户
+            const result = Auth.register(username, email, password, role);
+
+            if (result.success) {
+                // 注册成功
+                successDiv.textContent = '注册成功！正在跳转到登录页面...';
+                successDiv.style.display = 'block';
+
+                // 清空表单
+                document.getElementById('registerForm').reset();
+
+                // 3秒后跳转到登录页面
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 3000);
+            } else {
+                // 注册失败
+                errorDiv.textContent = result.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户是否已经登录
+            if (Auth.isLoggedIn()) {
+                const user = Auth.getCurrentUser();
+                // 根据用户角色重定向到相应页面
+                if (user.role === 'admin') {
+                    window.location.href = 'admin/index.html';
+                } else {
+                    window.location.href = 'user/dashboard.html';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

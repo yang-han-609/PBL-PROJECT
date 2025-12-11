@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的任务 - LearnSync</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles -->
+    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="top-navbar">
+        <div class="navbar-left">
+            <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="navbar-brand ms-2">我的任务</span>
+        </div>
+        <div class="navbar-right">
+            <!-- 主题切换按钮 -->
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+            <!-- 用户菜单 -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="currentUserName">用户</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="dashboard.html"><i class="bi bi-house-door"></i> 仪表板</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> 退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="sidebar-logo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    LearnSync
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="bi bi-house-door"></i>
+                            仪表板
+                        </a>
+                    </li>
+                    <li>
+                        <a href="tasks.html" class="active">
+                            <i class="bi bi-list-task"></i>
+                            我的任务
+                            <span class="badge" id="taskCount">0</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="resources.html">
+                            <i class="bi bi-folder"></i>
+                            资源库
+                        </a>
+                    </li>
+                    <li>
+                        <a href="progress.html">
+                            <i class="bi bi-graph-up"></i>
+                            学习进度
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-user">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">用户名</div>
+                        <div class="user-role" id="sidebarUserRole">普通用户</div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                        <i class="bi bi-house"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">
+                        <i class="bi bi-power"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="content-area">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">我的任务</h1>
+                        <p class="page-subtitle">管理和跟踪您的学习任务</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline-secondary me-2" onclick="exportTasks()">
+                            <i class="bi bi-download"></i> 导出
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddTaskModal()">
+                            <i class="bi bi-plus-circle"></i> 新建任务
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 筛选和搜索区域 -->
+                <div class="filters-section">
+                    <div class="filters-row">
+                        <div class="search-box">
+                            <i class="bi bi-search"></i>
+                            <input type="text" class="form-control" id="searchInput" placeholder="搜索任务..." onkeyup="handleSearch()">
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">状态</label>
+                            <select class="form-select" id="statusFilter" onchange="handleFilter()">
+                                <option value="">全部状态</option>
+                                <option value="Todo">待办</option>
+                                <option value="InProgress">进行中</option>
+                                <option value="Completed">已完成</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">优先级</label>
+                            <select class="form-select" id="priorityFilter" onchange="handleFilter()">
+                                <option value="">全部优先级</option>
+                                <option value="High">高优先级</option>
+                                <option value="Medium">中优先级</option>
+                                <option value="Low">低优先级</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label class="filter-label">排序</label>
+                            <select class="form-select" id="sortByFilter" onchange="handleFilter()">
+                                <option value="createdAt">创建时间</option>
+                                <option value="deadline">截止日期</option>
+                                <option value="priority">优先级</option>
+                                <option value="title">标题</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 视图切换按钮 -->
+                <div class="mb-3">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="listViewBtn" onclick="switchToListView()">
+                            <i class="bi bi-list"></i> 列表视图
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="boardViewBtn" onclick="switchToBoardView()">
+                            <i class="bi bi-columns-gap"></i> 看板视图
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 任务列表视图 -->
+                <div id="listView" class="task-list-view">
+                    <div id="tasksList">
+                        <!-- 任务列表将通过JavaScript动态加载 -->
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            <h5>暂无任务</h5>
+                            <p>点击"新建任务"开始添加您的学习任务</p>
+                            <button class="btn btn-primary" onclick="openAddTaskModal()">
+                                <i class="bi bi-plus-circle"></i> 新建任务
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 看板视图 -->
+                <div id="boardView" class="task-board-view" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="task-column" id="todoColumn" ondrop="handleDrop(event, 'Todo')" ondragover="handleDragOver(event)">
+                                <div class="task-column-header">
+                                    <div class="task-column-title">
+                                        <i class="bi bi-circle"></i>
+                                        待办
+                                    </div>
+                                    <span class="task-column-count" id="todoCount">0</span>
+                                </div>
+                                <div class="task-column-content" id="todoTasks">
+                                    <!-- 待办任务将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="task-column" id="progressColumn" ondrop="handleDrop(event, 'InProgress')" ondragover="handleDragOver(event)">
+                                <div class="task-column-header">
+                                    <div class="task-column-title">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                        进行中
+                                    </div>
+                                    <span class="task-column-count" id="progressCount">0</span>
+                                </div>
+                                <div class="task-column-content" id="progressTasks">
+                                    <!-- 进行中任务将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="task-column" id="completedColumn" ondrop="handleDrop(event, 'Completed')" ondragover="handleDragOver(event)">
+                                <div class="task-column-header">
+                                    <div class="task-column-title">
+                                        <i class="bi bi-check-circle"></i>
+                                        已完成
+                                    </div>
+                                    <span class="task-column-count" id="completedCount">0</span>
+                                </div>
+                                <div class="task-column-content" id="completedTasks">
+                                    <!-- 已完成任务将通过JavaScript动态加载 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 任务模态框 -->
+    <div class="modal fade" id="taskModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="taskModalTitle">新建任务</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm">
+                        <input type="hidden" id="taskId">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="taskTitle" class="form-label">任务标题 *</label>
+                                    <input type="text" class="form-control" id="taskTitle" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="taskPriority" class="form-label">优先级</label>
+                                    <select class="form-select" id="taskPriority">
+                                        <option value="Low">低优先级</option>
+                                        <option value="Medium" selected>中优先级</option>
+                                        <option value="High">高优先级</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskDescription" class="form-label">任务描述</label>
+                            <textarea class="form-control" id="taskDescription" rows="3"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="taskDeadline" class="form-label">截止日期</label>
+                                    <input type="datetime-local" class="form-control" id="taskDeadline">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="taskEstimatedTime" class="form-label">预估时间（分钟）</label>
+                                    <input type="number" class="form-control" id="taskEstimatedTime" min="0">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskTags" class="form-label">标签（用逗号分隔）</label>
+                            <input type="text" class="form-control" id="taskTags" placeholder="JavaScript, 学习, 前端">
+                        </div>
+                        <div class="mb-3">
+                            <label for="taskStatus" class="form-label">状态</label>
+                            <select class="form-select" id="taskStatus">
+                                <option value="Todo">待办</option>
+                                <option value="InProgress">进行中</option>
+                                <option value="Completed">已完成</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-danger" id="deleteTaskBtn" onclick="deleteTask()" style="display: none;">
+                        <i class="bi bi-trash"></i> 删除
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="saveTask()">保存任务</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 记录时间模态框 -->
+    <div class="modal fade" id="recordTimeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">记录学习时间</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="recordTimeForm">
+                        <input type="hidden" id="recordTaskId">
+                        <div class="mb-3">
+                            <label for="recordTaskTitle" class="form-label">任务</label>
+                            <input type="text" class="form-control" id="recordTaskTitle" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordTime" class="form-label">学习时间（分钟）</label>
+                            <input type="number" class="form-control" id="recordTime" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="recordNotes" class="form-label">学习笔记</label>
+                            <textarea class="form-control" id="recordNotes" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveRecordTime()">记录时间</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/md5.min.js"></script>
+    <script src="../js/storage.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/taskManager.js"></script>
+    <script src="../js/progressTracker.js"></script>
+
+    <!-- Tasks specific JavaScript -->
+    <script>
+        // 全局变量
+        let currentTasks = [];
+        let currentView = 'list';
+        let currentFilters = {
+            search: '',
+            status: '',
+            priority: '',
+            sortBy: 'createdAt',
+            sortOrder: 'desc'
+        };
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态
+            if (!Auth.isLoggedIn()) {
+                window.location.href = '../index.html';
+                return;
+            }
+
+            // 初始化任务页面
+            initializeTasksPage();
+        });
+
+        /**
+         * 初始化任务页面
+         */
+        function initializeTasksPage() {
+            loadUserInfo();
+            loadTasks();
+            updateTaskCounts();
+        }
+
+        /**
+         * 加载用户信息
+         */
+        function loadUserInfo() {
+            const currentUser = Auth.getCurrentUser();
+            if (currentUser) {
+                document.getElementById('currentUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
+                document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            }
+        }
+
+        /**
+         * 加载任务列表
+         */
+        function loadTasks() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            currentTasks = TaskManager.getUserTasks(currentUser.id, currentFilters);
+
+            if (currentView === 'list') {
+                renderListView();
+            } else {
+                renderBoardView();
+            }
+        }
+
+        /**
+         * 渲染列表视图
+         */
+        function renderListView() {
+            const tasksList = document.getElementById('tasksList');
+
+            if (currentTasks.length === 0) {
+                tasksList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h5>暂无任务</h5>
+                        <p>点击"新建任务"开始添加您的学习任务</p>
+                        <button class="btn btn-primary" onclick="openAddTaskModal()">
+                            <i class="bi bi-plus-circle"></i> 新建任务
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            tasksList.innerHTML = currentTasks.map(task => `
+                <div class="task-card draggable" draggable="true" ondragstart="handleDragStart(event, '${task.id}')" ondragend="handleDragEnd(event)">
+                    <div class="task-header">
+                        <h6 class="task-title">${task.title}</h6>
+                        <div class="task-actions">
+                            <button class="btn btn-sm btn-outline-info" onclick="openRecordTimeModal('${task.id}')" title="记录时间">
+                                <i class="bi bi-clock"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="openEditTaskModal('${task.id}')" title="编辑">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteTask('${task.id}')" title="删除">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    ${task.description ? `<p class="task-description">${task.description}</p>` : ''}
+                    <div class="task-meta">
+                        <span class="priority-${task.priority.toLowerCase()}">${getPriorityText(task.priority)}</span>
+                        <span class="status-${task.status.toLowerCase()}">${getStatusText(task.status)}</span>
+                        ${task.deadline ? `<small class="text-muted ${isOverdue(task.deadline, task.status) ? 'text-danger' : ''}"><i class="bi bi-calendar"></i> ${formatDate(task.deadline)}</small>` : ''}
+                        ${task.actualTime ? `<small class="text-info"><i class="bi bi-clock"></i> ${formatTime(task.actualTime)}</small>` : ''}
+                        ${task.tags && task.tags.length > 0 ? `
+                            <div class="mt-2">
+                                ${task.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 渲染看板视图
+         */
+        function renderBoardView() {
+            const todoTasks = currentTasks.filter(task => task.status === 'Todo');
+            const progressTasks = currentTasks.filter(task => task.status === 'InProgress');
+            const completedTasks = currentTasks.filter(task => task.status === 'Completed');
+
+            // 更新计数
+            document.getElementById('todoCount').textContent = todoTasks.length;
+            document.getElementById('progressCount').textContent = progressTasks.length;
+            document.getElementById('completedCount').textContent = completedTasks.length;
+
+            // 渲染任务卡片
+            document.getElementById('todoTasks').innerHTML = todoTasks.length > 0 ?
+                todoTasks.map(task => createTaskCard(task)).join('') :
+                '<div class="text-muted text-center p-3">暂无待办任务</div>';
+
+            document.getElementById('progressTasks').innerHTML = progressTasks.length > 0 ?
+                progressTasks.map(task => createTaskCard(task)).join('') :
+                '<div class="text-muted text-center p-3">暂无进行中任务</div>';
+
+            document.getElementById('completedTasks').innerHTML = completedTasks.length > 0 ?
+                completedTasks.map(task => createTaskCard(task)).join('') :
+                '<div class="text-muted text-center p-3">暂无已完成任务</div>';
+        }
+
+        /**
+         * 创建任务卡片
+         */
+        function createTaskCard(task) {
+            return `
+                <div class="task-card draggable mb-2" draggable="true" ondragstart="handleDragStart(event, '${task.id}')" ondragend="handleDragEnd(event)">
+                    <div class="task-header">
+                        <h6 class="task-title">${task.title}</h6>
+                        <span class="priority-${task.priority.toLowerCase()}">${getPriorityText(task.priority)}</span>
+                    </div>
+                    ${task.description ? `<p class="task-description">${task.description}</p>` : ''}
+                    <div class="task-meta">
+                        ${task.deadline ? `<small class="${isOverdue(task.deadline, task.status) ? 'text-danger' : 'text-muted'}"><i class="bi bi-calendar"></i> ${formatDate(task.deadline)}</small>` : ''}
+                        ${task.actualTime ? `<small class="text-info"><i class="bi bi-clock"></i> ${formatTime(task.actualTime)}</small>` : ''}
+                    </div>
+                    <div class="task-actions mt-2">
+                        <button class="btn btn-sm btn-outline-info" onclick="openRecordTimeModal('${task.id}')" title="记录时间">
+                            <i class="bi bi-clock"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="openEditTaskModal('${task.id}')" title="编辑">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="confirmDeleteTask('${task.id}')" title="删除">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * 拖拽开始
+         */
+        function handleDragStart(event, taskId) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('taskId', taskId);
+            event.target.classList.add('dragging');
+        }
+
+        /**
+         * 拖拽结束
+         */
+        function handleDragEnd(event) {
+            event.target.classList.remove('dragging');
+        }
+
+        /**
+         * 拖拽经过
+         */
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+
+            const column = event.currentTarget;
+            if (column.classList.contains('task-column')) {
+                column.classList.add('drag-over');
+            }
+        }
+
+        /**
+         * 处理放置
+         */
+        function handleDrop(event, newStatus) {
+            event.preventDefault();
+
+            const taskId = event.dataTransfer.getData('taskId');
+            const column = event.currentTarget;
+
+            if (column.classList.contains('task-column')) {
+                column.classList.remove('drag-over');
+            }
+
+            updateTaskStatus(taskId, newStatus);
+        }
+
+        /**
+         * 更新任务状态
+         */
+        function updateTaskStatus(taskId, newStatus) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const result = TaskManager.updateTask(taskId, { status: newStatus }, currentUser.id);
+
+            if (result.success) {
+                loadTasks();
+                updateTaskCounts();
+            } else {
+                alert('更新任务状态失败：' + result.message);
+            }
+        }
+
+        /**
+         * 切换到列表视图
+         */
+        function switchToListView() {
+            currentView = 'list';
+            document.getElementById('listView').style.display = 'block';
+            document.getElementById('boardView').style.display = 'none';
+            document.getElementById('listViewBtn').classList.add('active');
+            document.getElementById('boardViewBtn').classList.remove('active');
+            renderListView();
+        }
+
+        /**
+         * 切换到看板视图
+         */
+        function switchToBoardView() {
+            currentView = 'board';
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('boardView').style.display = 'block';
+            document.getElementById('listViewBtn').classList.remove('active');
+            document.getElementById('boardViewBtn').classList.add('active');
+            renderBoardView();
+        }
+
+        /**
+         * 处理搜索
+         */
+        function handleSearch() {
+            currentFilters.search = document.getElementById('searchInput').value;
+            loadTasks();
+        }
+
+        /**
+         * 处理筛选
+         */
+        function handleFilter() {
+            currentFilters.status = document.getElementById('statusFilter').value;
+            currentFilters.priority = document.getElementById('priorityFilter').value;
+            currentFilters.sortBy = document.getElementById('sortByFilter').value;
+            loadTasks();
+        }
+
+        /**
+         * 打开添加任务模态框
+         */
+        function openAddTaskModal() {
+            document.getElementById('taskModalTitle').textContent = '新建任务';
+            document.getElementById('deleteTaskBtn').style.display = 'none';
+            document.getElementById('taskForm').reset();
+            document.getElementById('taskId').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('taskModal'));
+            modal.show();
+        }
+
+        /**
+         * 打开编辑任务模态框
+         */
+        function openEditTaskModal(taskId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const task = TaskManager.getTask(taskId, currentUser.id);
+            if (!task) {
+                alert('任务不存在或无权限访问');
+                return;
+            }
+
+            document.getElementById('taskModalTitle').textContent = '编辑任务';
+            document.getElementById('deleteTaskBtn').style.display = 'block';
+
+            // 填充表单数据
+            document.getElementById('taskId').value = task.id;
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDescription').value = task.description || '';
+            document.getElementById('taskPriority').value = task.priority;
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('taskEstimatedTime').value = task.estimatedTime || '';
+            document.getElementById('taskTags').value = task.tags ? task.tags.join(', ') : '';
+
+            // 设置截止日期
+            if (task.deadline) {
+                const deadline = new Date(task.deadline);
+                const localDateTime = new Date(deadline.getTime() - deadline.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16);
+                document.getElementById('taskDeadline').value = localDateTime;
+            } else {
+                document.getElementById('taskDeadline').value = '';
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('taskModal'));
+            modal.show();
+        }
+
+        /**
+         * 保存任务
+         */
+        function saveTask() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const taskId = document.getElementById('taskId').value;
+            const taskData = {
+                title: document.getElementById('taskTitle').value.trim(),
+                description: document.getElementById('taskDescription').value.trim(),
+                priority: document.getElementById('taskPriority').value,
+                status: document.getElementById('taskStatus').value,
+                estimatedTime: parseInt(document.getElementById('taskEstimatedTime').value) || null,
+                tags: document.getElementById('taskTags').value
+                    .split(',')
+                    .map(tag => tag.trim())
+                    .filter(tag => tag.length > 0),
+                userId: currentUser.id
+            };
+
+            // 处理截止日期
+            const deadlineInput = document.getElementById('taskDeadline').value;
+            if (deadlineInput) {
+                taskData.deadline = new Date(deadlineInput).toISOString();
+            }
+
+            // 验证必填字段
+            if (!taskData.title) {
+                alert('请输入任务标题');
+                return;
+            }
+
+            let result;
+            if (taskId) {
+                // 更新任务
+                result = TaskManager.updateTask(taskId, taskData, currentUser.id);
+            } else {
+                // 创建任务
+                result = TaskManager.createTask(taskData);
+            }
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+                loadTasks();
+                updateTaskCounts();
+                alert(taskId ? '任务更新成功！' : '任务创建成功！');
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 确认删除任务
+         */
+        function confirmDeleteTask(taskId) {
+            if (confirm('确定要删除这个任务吗？此操作不可恢复。')) {
+                deleteTaskById(taskId);
+            }
+        }
+
+        /**
+         * 删除任务
+         */
+        function deleteTask() {
+            const taskId = document.getElementById('taskId').value;
+            deleteTaskById(taskId);
+        }
+
+        /**
+         * 根据ID删除任务
+         */
+        function deleteTaskById(taskId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const result = TaskManager.deleteTask(taskId, currentUser.id);
+
+            if (result.success) {
+                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+                loadTasks();
+                updateTaskCounts();
+                alert('任务删除成功！');
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 打开记录时间模态框
+         */
+        function openRecordTimeModal(taskId) {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const task = TaskManager.getTask(taskId, currentUser.id);
+            if (!task) {
+                alert('任务不存在或无权限访问');
+                return;
+            }
+
+            document.getElementById('recordTaskId').value = taskId;
+            document.getElementById('recordTaskTitle').value = task.title;
+            document.getElementById('recordTime').value = '';
+            document.getElementById('recordNotes').value = '';
+
+            const modal = new bootstrap.Modal(document.getElementById('recordTimeModal'));
+            modal.show();
+        }
+
+        /**
+         * 保存记录时间
+         */
+        function saveRecordTime() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const taskId = document.getElementById('recordTaskId').value;
+            const timeSpent = parseInt(document.getElementById('recordTime').value);
+            const notes = document.getElementById('recordNotes').value.trim();
+
+            if (!timeSpent || timeSpent <= 0) {
+                alert('请输入有效的学习时间');
+                return;
+            }
+
+            const result = TaskManager.recordTime(taskId, timeSpent, currentUser.id);
+
+            if (result.success) {
+                // 创建进度记录
+                ProgressTracker.createProgress({
+                    userId: currentUser.id,
+                    taskId: taskId,
+                    timeSpent: timeSpent,
+                    notes: notes,
+                    progressType: 'manual'
+                });
+
+                bootstrap.Modal.getInstance(document.getElementById('recordTimeModal')).hide();
+                loadTasks();
+                updateTaskCounts();
+                alert(`成功记录 ${timeSpent} 分钟的学习时间！`);
+            } else {
+                alert(result.message);
+            }
+        }
+
+        /**
+         * 更新任务计数
+         */
+        function updateTaskCounts() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const taskStats = TaskManager.getTaskStats(currentUser.id);
+            document.getElementById('taskCount').textContent = taskStats.byStatus.Todo + taskStats.byStatus.InProgress;
+        }
+
+        /**
+         * 导出任务数据
+         */
+        function exportTasks() {
+            const currentUser = Auth.getCurrentUser();
+            if (!currentUser) return;
+
+            const csvData = TaskManager.exportTasks(currentUser.id, 'csv');
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `tasks_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        /**
+         * 切换侧边栏（移动端）
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        /**
+         * 处理用户登出
+         */
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                Auth.logout();
+                window.location.href = '../index.html';
+            }
+        }
+
+        /**
+         * 辅助函数：获取优先级文本
+         */
+        function getPriorityText(priority) {
+            const priorityMap = {
+                'High': '高',
+                'Medium': '中',
+                'Low': '低'
+            };
+            return priorityMap[priority] || priority;
+        }
+
+        /**
+         * 辅助函数：获取状态文本
+         */
+        function getStatusText(status) {
+            const statusMap = {
+                'Todo': '待办',
+                'InProgress': '进行中',
+                'Completed': '已完成'
+            };
+            return statusMap[status] || status;
+        }
+
+        /**
+         * 辅助函数：格式化日期
+         */
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('zh-CN') + ' ' + date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        /**
+         * 辅助函数：格式化时间
+         */
+        function formatTime(minutes) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hours > 0) {
+                return `${hours}小时${mins}分钟`;
+            } else {
+                return `${mins}分钟`;
+            }
+        }
+
+        /**
+         * 辅助函数：检查是否过期
+         */
+        function isOverdue(deadline, status) {
+            if (status === 'Completed') return false;
+            return new Date(deadline) < new Date();
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // 更新图标
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // 页面加载时恢复主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        });
+
+        // 移除看板列的拖拽高亮
+        document.addEventListener('dragleave', function(event) {
+            if (event.target.classList.contains('task-column')) {
+                event.target.classList.remove('drag-over');
+            }
+        });
+    </script>
+</body>
+</html>
