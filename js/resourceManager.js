@@ -440,6 +440,7 @@ class ResourceManager {
         }
     }
 
+    
     /**
      * 切换收藏状态
      * @param {string} resourceId - 资源ID
