@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnSync - 智能学习任务管理平台</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles for theme and general appearance -->
+    <link href="css/style.css" rel="stylesheet">
+    <!-- Auth-specific styles for login/register pages -->
+    <link href="css/auth.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Main container for authentication page -->
+    <div class="auth-container">
+        <!-- Theme toggle button for dark/light mode switching -->
+        <div class="theme-toggle">
+            <button class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+        </div>
+
+        <!-- Card containing login form -->
+        <div class="auth-card">
+            <!-- Logo and title section -->
+            <div class="text-center mb-4">
+                <h1 class="logo">
+                    <i class="bi bi-mortarboard-fill text-primary"></i> LearnSync
+                </h1>
+                <p class="text-muted">智能学习任务管理平台</p>
+            </div>
+
+            <!-- Login form with validation -->
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <h2 class="text-center mb-4">用户登录</h2>
+
+                <!-- Username input field -->
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="bi bi-person"></i> 用户名
+                    </label>
+                    <input type="text" class="form-control" id="username" required>
+                </div>
+
+                <!-- Password input field -->
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="bi bi-lock"></i> 密码
+                    </label>
+                    <input type="password" class="form-control" id="password" required>
+                </div>
+
+                <!-- Remember me checkbox -->
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">
+                        记住我
+                    </label>
+                </div>
+
+                <!-- Submit button for login -->
+                <button type="submit" class="btn btn-primary w-100 mb-3">
+                    <i class="bi bi-box-arrow-in-right"></i> 登录
+                </button>
+
+                <!-- Link to registration page -->
+                <div class="text-center">
+                    <p class="mb-0">还没有账号？ <a href="register.html" class="text-decoration-none">立即注册</a></p>
+                </div>
+            </form>
+
+            <!-- Error message display (hidden by default) -->
+            <div id="loginError" class="alert alert-danger mt-3" style="display: none;"></div>
+        </div>
+
+        <!-- Footer with copyright information -->
+        <div class="auth-footer">
+            <p>&copy; 2024 LearnSync. All rights reserved.</p>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <!-- Bootstrap JS for interactive components -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- MD5 encryption library for password hashing -->
+    <script src="lib/md5.min.js"></script>
+    <!-- Authentication module for login/logout functionality -->
+    <script src="js/auth.js"></script>
+    <!-- Storage module for LocalStorage operations -->
+    <script src="js/storage.js"></script>
+
+    <!-- Login handling script -->
+    <script>
+        // 处理用户登录
+        function handleLogin(event) {
+            // 阻止表单默认提交行为
+            event.preventDefault();
+
+            // 获取表单输入值
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+
+            // 获取错误显示元素
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.style.display = 'none';
+
+            // 验证输入
+            if (!username || !password) {
+                errorDiv.textContent = '请输入用户名和密码';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // 调用Auth模块进行登录
+            const result = Auth.login(username, password, rememberMe);
+
+            if (result.success) {
+                // 登录成功，重定向到相应页面
+                if (result.user.role === 'admin') {
+                    window.location.href = 'admin/index.html';
+                } else {
+                    window.location.href = 'user/dashboard.html';
+                }
+            } else {
+                // 登录失败，显示错误信息
+                errorDiv.textContent = result.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户是否已经登录
+            if (Auth.isLoggedIn()) {
+                // 获取当前用户信息
+                const user = Auth.getCurrentUser();
+                // 根据用户角色重定向到相应页面
+                if (user.role === 'admin') {
+                    // 管理员重定向到管理员仪表板
+                    window.location.href = 'admin/index.html';
+                } else {
+                    // 普通用户重定向到用户仪表板
+                    window.location.href = 'user/dashboard.html';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
