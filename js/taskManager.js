@@ -397,3 +397,259 @@ class TaskManager {
             };
         }
     }
+
+        /**
+     * 记录任务时间
+     * @param {string} taskId - 任务ID
+     * @param {number} minutes - 时间（分钟）
+     * @param {string} userId - 用户ID（用于权限验证）
+     * @returns {Object} 记录结果
+     */
+    recordTime(taskId, minutes, userId = null) {
+        try {
+            if (minutes <= 0) {
+                return {
+                    success: false,
+                    message: '时间必须大于0'
+                };
+            }
+
+            const task = this.getTask(taskId, userId);
+            if (!task) {
+                return {
+                    success: false,
+                    message: '任务不存在或无权限访问'
+                };
+            }
+
+            // 更新任务的实际用时
+            const currentActualTime = task.actualTime || 0;
+            const result = Storage.update(this.storageKey, taskId, {
+                actualTime: currentActualTime + minutes
+            });
+
+            if (result) {
+                // 创建进度记录
+                this.createProgressRecord({
+                    userId: task.userId,
+                    taskId: taskId,
+                    timeSpent: minutes,
+                    notes: `记录了 ${minutes} 分钟的学习时间`
+                });
+
+                return {
+                    success: true,
+                    message: `成功记录 ${minutes} 分钟`,
+                    task: result
+                };
+            } else {
+                return {
+                    success: false,
+                    message: '记录时间失败，请稍后重试'
+                };
+            }
+        } catch (error) {
+            console.error('记录时间失败:', error);
+            return {
+                success: false,
+                message: '记录时间失败，系统错误'
+            };
+        }
+    }
+
+    /**
+     * 获取任务统计信息
+     * @param {string} userId - 用户ID
+     * @returns {Object} 统计信息
+     */
+    getTaskStats(userId) {
+        try {
+            const tasks = this.getUserTasks(userId);
+
+            const stats = {
+                total: tasks.length,
+                byStatus: {
+                    Todo: 0,
+                    InProgress: 0,
+                    Completed: 0
+                },
+                byPriority: {
+                    High: 0,
+                    Medium: 0,
+                    Low: 0
+                },
+                overdue: 0,
+                completedThisWeek: 0,
+                totalEstimatedTime: 0,
+                totalActualTime: 0
+            };
+
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+            tasks.forEach(task => {
+                // 按状态统计
+                stats.byStatus[task.status]++;
+
+                // 按优先级统计
+                stats.byPriority[task.priority]++;
+
+                // 过期任务统计
+                if (task.deadline && task.status !== 'Completed') {
+                    const deadline = new Date(task.deadline);
+                    if (deadline < now) {
+                        stats.overdue++;
+                    }
+                }
+
+                // 本周完成任务统计
+                if (task.status === 'Completed' && task.completedAt) {
+                    const completedAt = new Date(task.completedAt);
+                    if (completedAt >= weekAgo) {
+                        stats.completedThisWeek++;
+                    }
+                }
+
+                // 时间统计
+                if (task.estimatedTime) {
+                    stats.totalEstimatedTime += task.estimatedTime;
+                }
+                if (task.actualTime) {
+                    stats.totalActualTime += task.actualTime;
+                }
+            });
+
+            // 计算完成率
+            stats.completionRate = stats.total > 0 ?
+                Math.round((stats.byStatus.Completed / stats.total) * 100) : 0;
+
+            return stats;
+        } catch (error) {
+            console.error('获取任务统计失败:', error);
+            return {
+                total: 0,
+                byStatus: { Todo: 0, InProgress: 0, Completed: 0 },
+                byPriority: { High: 0, Medium: 0, Low: 0 },
+                overdue: 0,
+                completedThisWeek: 0,
+                totalEstimatedTime: 0,
+                totalActualTime: 0,
+                completionRate: 0
+            };
+        }
+    }
+
+    /**
+     * 获取即将到期的任务
+     * @param {string} userId - 用户ID
+     * @param {number} days - 天数（默认7天）
+     * @returns {Array} 即将到期的任务列表
+     */
+    getUpcomingDeadlines(userId, days = 7) {
+        try {
+            const tasks = this.getUserTasks(userId);
+            const now = new Date();
+            const futureDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+
+            return tasks
+                .filter(task =>
+                    task.deadline &&
+                    task.status !== 'Completed' &&
+                    new Date(task.deadline) >= now &&
+                    new Date(task.deadline) <= futureDate
+                )
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+        } catch (error) {
+            console.error('获取即将到期任务失败:', error);
+            return [];
+        }
+    }
+
+    /**
+     * 创建进度记录
+     * @param {Object} progressData - 进度数据
+     * @returns {Object|null} 创建的进度记录或null
+     */
+    createProgressRecord(progressData) {
+        try {
+            return Storage.add(this.progressKey, {
+                userId: progressData.userId,
+                taskId: progressData.taskId,
+                completedAt: progressData.completedAt || new Date().toISOString(),
+                notes: progressData.notes || '',
+                timeSpent: progressData.timeSpent || 0
+            });
+        } catch (error) {
+            console.error('创建进度记录失败:', error);
+            return null;
+        }
+    }
+
+    /**
+     * 导出任务数据
+     * @param {string} userId - 用户ID
+     * @param {string} format - 导出格式（'json' 或 'csv'）
+     * @returns {string} 导出的数据
+     */
+    exportTasks(userId, format = 'json') {
+        try {
+            const tasks = this.getUserTasks(userId);
+
+            if (format === 'csv') {
+                // CSV格式导出
+                const headers = [
+                    'ID', '标题', '描述', '优先级', '状态',
+                    '截止日期', '预估时间', '实际用时', '标签', '创建时间'
+                ];
+
+                const rows = tasks.map(task => [
+                    task.id,
+                    `"${task.title}"`,
+                    `"${task.description}"`,
+                    task.priority,
+                    task.status,
+                    task.deadline || '',
+                    task.estimatedTime || '',
+                    task.actualTime || '',
+                    `"${task.tags.join('; ')}"`,
+                    task.createdAt
+                ]);
+
+                return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+            } else {
+                // JSON格式导出
+                return JSON.stringify(tasks, null, 2);
+            }
+        } catch (error) {
+            console.error('导出任务数据失败:', error);
+            return '';
+        }
+    }
+
+    /**
+     * 搜索任务
+     * @param {string} userId - 用户ID
+     * @param {string} query - 搜索查询
+     * @param {Array} fields - 搜索字段
+     * @returns {Array} 搜索结果
+     */
+    searchTasks(userId, query, fields = ['title', 'description', 'tags']) {
+        try {
+            return Storage.search(this.storageKey, query, fields)
+                .filter(task => task.userId === userId);
+        } catch (error) {
+            console.error('搜索任务失败:', error);
+            return [];
+        }
+    }
+}
+
+// 创建全局任务管理器实例
+const TaskManager = new TaskManager();
+
+// 导出任务管理器（支持模块化环境）
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { TaskManager };
+} else if (typeof window !== 'undefined') {
+    window.TaskManager = TaskManager;
+}
