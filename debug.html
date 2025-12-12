@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnSync 登录调试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>LearnSync 登录调试工具</h1>
+
+    <div class="debug-section">
+        <h2>1. 库文件检查</h2>
+        <div id="library-status">检查中...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>2. MD5 功能测试</h2>
+        <div id="md5-status">测试中...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>3. 数据存储测试</h2>
+        <div id="storage-status">测试中...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>4. 认证模块测试</h2>
+        <div id="auth-status">测试中...</div>
+    </div>
+
+    <div class="debug-section">
+        <h2>5. 清除和修复数据</h2>
+        <button onclick="clearAllData()">清除所有LocalStorage数据</button>
+        <button onclick="initDefaultData()">重新初始化默认数据</button>
+        <button onclick="fixUsers()">修复用户isActive字段</button>
+        <button onclick="location.reload()">重新加载页面</button>
+        <div id="clear-status"></div>
+    </div>
+
+    <!-- 引入库文件 -->
+    <script src="lib/md5.min.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/auth.js"></script>
+
+    <script>
+        // 页面加载完成后执行所有测试
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLibraries();
+            testMD5();
+            testStorage();
+            testAuth();
+        });
+
+        function checkLibraries() {
+            const statusDiv = document.getElementById('library-status');
+            let html = '';
+
+            // 检查MD5库
+            if (typeof md5 !== 'undefined') {
+                html += '<p class="success">✅ MD5库已加载</p>';
+            } else {
+                html += '<p class="error">❌ MD5库未加载</p>';
+            }
+
+            // 检查Storage
+            if (typeof Storage !== 'undefined') {
+                html += '<p class="success">✅ Storage模块已加载</p>';
+            } else {
+                html += '<p class="error">❌ Storage模块未加载</p>';
+            }
+
+            // 检查Auth
+            if (typeof Auth !== 'undefined') {
+                html += '<p class="success">✅ Auth模块已加载</p>';
+            } else {
+                html += '<p class="error">❌ Auth模块未加载</p>';
+            }
+
+            statusDiv.innerHTML = html;
+        }
+
+        function testMD5() {
+            const statusDiv = document.getElementById('md5-status');
+            let html = '';
+
+            try {
+                const adminHash = md5('admin');
+                const demoHash = md5('demo');
+
+                html += `<p>MD5('admin') = ${adminHash}</p>`;
+                html += `<p>MD5('demo') = ${demoHash}</p>`;
+
+                // 检查是否与期望值匹配
+                const expectedAdminHash = '21232f297a57a5a743894a0e4a801fc3';
+                const expectedDemoHash = 'fe01ce2a7fbac8fafaed7c982a04e229';
+
+                if (adminHash === expectedAdminHash) {
+                    html += '<p class="success">✅ admin MD5哈希正确</p>';
+                } else {
+                    html += `<p class="error">❌ admin MD5哈希不匹配 (期望: ${expectedAdminHash})</p>`;
+                }
+
+                if (demoHash === expectedDemoHash) {
+                    html += '<p class="success">✅ demo MD5哈希正确</p>';
+                } else {
+                    html += `<p class="error">❌ demo MD5哈希不匹配 (期望: ${expectedDemoHash})</p>`;
+                }
+
+                html += '<p class="info">💡 如果MD5不匹配，请更新storage.js中的密码哈希值</p>';
+
+            } catch (error) {
+                html += `<p class="error">❌ MD5测试失败: ${error.message}</p>`;
+            }
+
+            statusDiv.innerHTML = html;
+        }
+
+        function testStorage() {
+            const statusDiv = document.getElementById('storage-status');
+            let html = '';
+
+            try {
+                // 检查LocalStorage是否可用
+                if (typeof Storage !== 'undefined') {
+                    html += '<p class="success">✅ LocalStorage可用</p>';
+
+                    // 检查用户数据
+                    const users = Storage.get('users');
+                    html += `<p>用户数量: ${users.length}</p>`;
+
+                    if (users.length > 0) {
+                        html += '<p class="info">现有用户:</p>';
+                        users.forEach(user => {
+                            html += `<p>- ${user.username} (${user.role})</p>`;
+                        });
+                    } else {
+                        html += '<p class="info">暂无用户数据</p>';
+                    }
+
+                    // 检查其他数据
+                    const tasks = Storage.get('tasks');
+                    const resources = Storage.get('resources');
+                    const progress = Storage.get('progress');
+
+                    html += `<p>任务数量: ${tasks.length}</p>`;
+                    html += `<p>资源数量: ${resources.length}</p>`;
+                    html += `<p>进度记录: ${progress.length}</p>`;
+
+                } else {
+                    html += '<p class="error">❌ Storage模块不可用</p>';
+                }
+
+            } catch (error) {
+                html += `<p class="error">❌ 存储测试失败: ${error.message}</p>`;
+            }
+
+            statusDiv.innerHTML = html;
+        }
+
+        function testAuth() {
+            const statusDiv = document.getElementById('auth-status');
+            let html = '';
+
+            try {
+                if (typeof Auth !== 'undefined') {
+                    html += '<p class="success">✅ Auth模块可用</p>';
+
+                    // 检查登录状态
+                    const isLoggedIn = Auth.isLoggedIn();
+                    html += `<p>当前登录状态: ${isLoggedIn ? '已登录' : '未登录'}</p>`;
+
+                    if (isLoggedIn) {
+                        const currentUser = Auth.getCurrentUser();
+                        html += `<p>当前用户: ${currentUser.username} (${currentUser.role})</p>`;
+                    }
+
+                    // 测试用户验证
+                    const testUsers = Storage.get('users');
+                    html += '<p class="info">测试用户验证:</p>';
+
+                    testUsers.forEach(user => {
+                        const testResult = Auth.login(user.username, user.username); // 用户名作为密码测试
+                        if (testResult.success) {
+                            html += `<p class="success">✅ ${user.username} 验证成功</p>`;
+                        } else {
+                            html += `<p class="error">❌ ${user.username} 验证失败: ${testResult.message}</p>`;
+                        }
+                    });
+
+                } else {
+                    html += '<p class="error">❌ Auth模块不可用</p>';
+                }
+
+            } catch (error) {
+                html += `<p class="error">❌ 认证测试失败: ${error.message}</p>`;
+            }
+
+            statusDiv.innerHTML = html;
+        }
+
+        function clearAllData() {
+            const statusDiv = document.getElementById('clear-status');
+
+            try {
+                localStorage.clear();
+                statusDiv.innerHTML = '<p class="success">✅ 所有LocalStorage数据已清除</p>';
+                statusDiv.innerHTML += '<button onclick="location.reload()">重新加载页面</button>';
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ 清除数据失败: ${error.message}</p>`;
+            }
+        }
+
+        function initDefaultData() {
+            const statusDiv = document.getElementById('clear-status');
+
+            try {
+                // 强制重新初始化
+                Storage.initializeDefaultData();
+                statusDiv.innerHTML = '<p class="success">✅ 默认数据已重新初始化</p>';
+                statusDiv.innerHTML += '<button onclick="location.reload()">重新加载页面</button>';
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ 初始化数据失败: ${error.message}</p>`;
+            }
+        }
+
+        function fixUsers() {
+            const statusDiv = document.getElementById('clear-status');
+
+            try {
+                // 直接修复用户数据
+                const users = Storage.get('users');
+                const updatedUsers = users.map(user => ({
+                    ...user,
+                    isActive: true
+                }));
+
+                Storage.set('users', updatedUsers);
+                statusDiv.innerHTML = '<p class="success">✅ 用户isActive字段已修复</p>';
+                statusDiv.innerHTML += '<p class="info">更新了 ' + users.length + ' 个用户</p>';
+                statusDiv.innerHTML += '<button onclick="location.reload()">重新加载页面测试登录</button>';
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ 修复用户失败: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

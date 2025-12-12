@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录测试</title>
+</head>
+<body>
+    <h1>MD5哈希测试</h1>
+    <div id="test-results"></div>
+
+    <script src="lib/md5.min.js"></script>
+    <script>
+        console.log('测试MD5函数...');
+
+        // 测试默认密码的MD5哈希
+        const adminHash = md5('admin');
+        const demoHash = md5('demo');
+
+        console.log('MD5("admin"):', adminHash);
+        console.log('MD5("demo"):', demoHash);
+        console.log('期望的admin哈希:', '21232f297a57a5a743894a0e4a801fc3');
+        console.log('期望的demo哈希:', 'fe01ce2a7fbac8fafaed7c982a04e229');
+
+        const results = document.getElementById('test-results');
+        results.innerHTML = `
+            <h2>MD5哈希测试结果:</h2>
+            <p><strong>输入 "admin" 的MD5:</strong> ${adminHash}</p>
+            <p><strong>期望值:</strong> 21232f297a57a5a743894a0e4a801fc3</p>
+            <p><strong>匹配:</strong> ${adminHash === '21232f297a57a5a743894a0e4a801fc3' ? '✅ 正确' : '❌ 错误'}</p>
+            <hr>
+            <p><strong>输入 "demo" 的MD5:</strong> ${demoHash}</p>
+            <p><strong>期望值:</strong> fe01ce2a7fbac8fafaed7c982a04e229</p>
+            <p><strong>匹配:</strong> ${demoHash === 'fe01ce2a7fbac8fafaed7c982a04e229' ? '✅ 正确' : '❌ 错误'}</p>
+            <hr>
+            <h3>结论:</h3>
+            <p>${adminHash === '21232f297a57a5a743894a0e4a801fc3' && demoHash === 'fe01ce2a7fbac8fafaed7c982a04e229' ?
+                '✅ MD5哈希正确，登录应该可以正常工作！' :
+                '❌ MD5哈希不匹配，需要更新storage.js中的默认密码哈希值'}</p>
+        `;
+    </script>
+</body>
+</html>
