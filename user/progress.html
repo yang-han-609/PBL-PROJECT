@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学习进度 - LearnSync</title>
+    <!-- Bootstrap CSS for responsive layout and components -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons for rich icon support -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom styles -->
+    <link href="../css/style.css" rel="stylesheet">
+    <link href="../css/dashboard.css" rel="stylesheet">
+    <style> 
+        .timer-display {
+            font-size: 3rem;
+            font-weight: bold; 
+            text-align: center;
+            color: var(--accent-color);
+            font-family: 'Courier New', monospace;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .progress-timeline {
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .progress-timeline::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--border-color);
+        }
+
+        .progress-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+            padding-left: 1rem;
+        }
+
+        .progress-item::before {
+            content: '';
+            position: absolute;
+            left: -1.75rem;
+            top: 0.5rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            border: 2px solid var(--card-bg);
+        }
+
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(15px, 1fr));
+            gap: 2px;
+            padding: 1rem;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.2);
+            border: 1px solid var(--accent-color);
+        }
+
+        .heatmap-0 { background-color: var(--bg-tertiary); }
+        .heatmap-1 { background-color: rgba(13, 110, 253, 0.2); }
+        .heatmap-2 { background-color: rgba(13, 110, 253, 0.4); }
+        .heatmap-3 { background-color: rgba(13, 110, 253, 0.6); }
+        .heatmap-4 { background-color: rgba(13, 110, 253, 0.8); }
+
+        .goal-card {
+            background: linear-gradient(135deg, var(--accent-color), var(--info-color));
+            color: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .goal-progress {
+            background-color: rgba(255, 255, 255, 0.3);
+            border-radius: 1rem;
+            overflow: hidden;
+            height: 8px;
+            margin: 1rem 0;
+        }
+
+        .goal-progress-bar {
+            height: 100%;
+            background-color: white;
+            border-radius: 1rem;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部导航栏 -->
+    <nav class="top-navbar">
+        <div class="navbar-left">
+            <button class="sidebar-toggle d-lg-none" onclick="toggleSidebar()">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="navbar-brand ms-2">学习进度</span>
+        </div>
+        <div class="navbar-right">
+            <!-- 主题切换按钮 -->
+            <button class="btn btn-outline-secondary btn-sm me-2" onclick="toggleTheme()">
+                <i class="bi bi-moon-stars" id="theme-icon"></i>
+            </button>
+            <!-- 用户菜单 -->
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="currentUserName">用户</span>
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="dashboard.html"><i class="bi bi-house-door"></i> 仪表板</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="handleLogout()"><i class="bi bi-box-arrow-right"></i> 退出登录</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <a href="dashboard.html" class="sidebar-logo">
+                    <i class="bi bi-mortarboard-fill"></i>
+                    LearnSync
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="bi bi-house-door"></i>
+                            仪表板
+                        </a>
+                    </li>
+                    <li>
+                        <a href="tasks.html">
+                            <i class="bi bi-list-task"></i>
+                            我的任务
+                        </a>
+                    </li>
+                    <li>
+                        <a href="resources.html">
+                            <i class="bi bi-folder"></i>
+                            资源库
+                        </a>
+                    </li>
+                    <li>
+                        <a href="progress.html" class="active">
+                            <i class="bi bi-graph-up"></i>
+                            学习进度
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="sidebar-user">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <div class="user-info">
+                        <div class="user-name" id="sidebarUserName">用户名</div>
+                        <div class="user-role" id="sidebarUserRole">普通用户</div>
+                    </div>
+                </div>
+                <div class="user-actions">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.href='dashboard.html'">
+                        <i class="bi bi-house"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="handleLogout()">
+                        <i class="bi bi-power"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="content-area">
+                <!-- 页面头部 -->
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">学习进度</h1>
+                        <p class="page-subtitle">跟踪和记录您的学习进展</p>
+                    </div>
+                    <div class="page-actions">
+                        <button class="btn btn-outline-secondary me-2" onclick="exportProgress()">
+                            <i class="bi bi-download"></i> 导出
+                        </button>
+                        <button class="btn btn-primary" onclick="openRecordProgressModal()">
+                            <i class="bi bi-plus-circle"></i> 记录进度
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 学习统计概览 -->
+                <div class="stats-grid mb-4" id="progressStats">
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon primary">
+                                <i class="bi bi-clock"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="totalTime">0</div>
+                        <div class="stats-label">总学习时间（小时）</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon success">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="studyDays">0</div>
+                        <div class="stats-label">学习天数</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon info">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="avgTime">0</div>
+                        <div class="stats-label">平均每日（分钟）</div>
+                    </div>
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div class="stats-icon warning">
+                                <i class="bi bi-trophy"></i>
+                            </div>
+                        </div>
+                        <div class="stats-value" id="satisfaction">0</div>
+                        <div class="stats-label">平均满意度</div>
+                    </div>
+                </div>
+
+                <!-- 番茄钟计时器 -->
+                <div class="chart-container mb-4">
+                    <div class="chart-header">
+                        <h5 class="chart-title">番茄钟计时器</h5>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm btn-outline-primary" onclick="setTimer(25)">25分钟</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="setTimer(45)">45分钟</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="setTimer(60)">60分钟</button>
+                        </div>
+                    </div>
+                    <div class="text-center py-4">
+                        <div class="timer-display" id="timerDisplay">00:00</div>
+                        <div class="timer-controls">
+                            <button class="btn btn-success" id="startBtn" onclick="startTimer()">
+                                <i class="bi bi-play-fill"></i> 开始
+                            </button>
+                            <button class="btn btn-warning" id="pauseBtn" onclick="pauseTimer()" style="display: none;">
+                                <i class="bi bi-pause-fill"></i> 暂停
+                            </button>
+                            <button class="btn btn-danger" onclick="resetTimer()">
+                                <i class="bi bi-stop-fill"></i> 重置
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <select class="form-select form-select-sm d-inline-block w-auto" id="taskSelect">
+                                <option value="">选择任务...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 学习目标 -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="goal-card">
+                            <h6 class="mb-2">每日目标</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span id="dailyTarget">120 分钟</span>
+                                <span id="dailyProgress">0%</span>
+                            </div>
+                            <div class="goal-progress">
+                                <div class="goal-progress-bar" id="dailyProgressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="goal-card">
+                            <h6 class="mb-2">每周目标</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span id="weeklyTarget">600 分钟</span>
+                                <span id="weeklyProgress">0%</span>
+                            </div>
+                            <div class="goal-progress">
+                                <div class="goal-progress-bar" id="weeklyProgressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="goal-card">
+                            <h6 class="mb-2">每月目标</h6>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span id="monthlyTarget">2400 分钟</span>
+                                <span id="monthlyProgress">0%</span>
+                            </div>
+                            <div class="goal-progress">
+                                <div class="goal-progress-bar" id="monthlyProgressBar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容网格 -->
+                <div class="content-grid two-columns">
+                    <!-- 左侧内容 -->
+                    <div>
+                        <!-- 学习热力图 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">学习热力图（最近90天）</h5>
+                            </div>
+                            <div class="heatmap-container" id="heatmap">
+                                <!-- 热力图将通过JavaScript动态生成 -->
+                            </div>
+                            <div class="text-center mt-2">
+                                <small class="text-muted">少</small>
+                                <span class="mx-3">
+                                    <span class="heatmap-cell heatmap-1 me-1"></span>
+                                    <span class="heatmap-cell heatmap-2 me-1"></span>
+                                    <span class="heatmap-cell heatmap-3 me-1"></span>
+                                    <span class="heatmap-cell heatmap-4"></span>
+                                </span>
+                                <small class="text-muted">多</small>
+                            </div>
+                        </div>
+
+                        <!-- 学习时间趋势 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">学习时间趋势</h5>
+                                <div class="chart-controls">
+                                    <select class="form-select form-select-sm" id="timeRangeSelect" onchange="updateTimeChart()">
+                                        <option value="7">最近7天</option>
+                                        <option value="30" selected>最近30天</option>
+                                        <option value="90">最近90天</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="learningTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 右侧内容 -->
+                    <div>
+                        <!-- 最近学习记录 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">最近学习记录</h5>
+                                <a href="#" class="btn btn-sm btn-outline-primary" onclick="loadMoreRecords()">查看更多</a>
+                            </div>
+                            <div class="progress-timeline" id="recentRecords">
+                                <!-- 学习记录将通过JavaScript动态加载 -->
+                                <div class="empty-state">
+                                    <i class="bi bi-clock-history"></i>
+                                    <h6>暂无学习记录</h6>
+                                    <p>开始记录您的学习进度吧！</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 任务完成情况 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">任务完成情况</h5>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="taskCompletionChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- 学习分布 -->
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h5 class="chart-title">学习时间分布</h5>
+                            </div>
+                            <div class="chart-wrapper">
+                                <canvas id="studyDistributionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 记录进度模态框 -->
+    <div class="modal fade" id="recordProgressModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">记录学习进度</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="recordProgressForm">
+                        <div class="mb-3">
+                            <label for="progressTask" class="form-label">选择任务 *</label>
+                            <select class="form-select" id="progressTask" required>
+                                <option value="">请选择任务...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="progressTime" class="form-label">学习时间（分钟） *</label>
+                            <input type="number" class="form-control" id="progressTime" min="1" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="progressDifficulty" class="form-label">学习难度</label>
+                            <select class="form-select" id="progressDifficulty">
+                                <option value="">请选择难度</option>
+                                <option value="easy">简单</option>
+                                <option value="medium">中等</option>
+                                <option value="hard">困难</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="progressSatisfaction" class="form-label">学习满意度 (1-5)</label>
+                            <select class="form-select" id="progressSatisfaction">
+                                <option value="5">非常满意</option>
+                                <option value="4">满意</option>
+                                <option value="3" selected>一般</option>
+                                <option value="2">不满意</option>
+                                <option value="1">非常不满意</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="progressNotes" class="form-label">学习笔记</label>
+                            <textarea class="form-control" id="progressNotes" rows="3" placeholder="记录您的学习心得和体会..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="progressTags" class="form-label">标签（用逗号分隔）</label>
+                            <input type="text" class="form-control" id="progressTags" placeholder="JavaScript, 练习, 总结">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProgress()">保存记录</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 番茄钟完成提醒模态框 -->
+    <div class="modal fade" id="timerCompleteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-bell text-success"></i> 番茄钟完成
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                    <h4 class="mt-3">恭喜！学习时间结束</h4>
+                    <p class="text-muted">您已经专注学习了 <span id="completedTime">25</span> 分钟</p>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="saveTimerProgress()">
+                            <i class="bi bi-save"></i> 记录进度
+                        </button>
+                        <button class="btn btn-success ms-2" onclick="restartTimer()">
+                            <i class="bi bi-arrow-clockwise"></i> 再来一轮
+                        </button>
+                        <button class="btn btn-secondary ms-2" data-bs-dismiss="modal">关闭</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../lib/md5.min.js"></script>
+    <script src="../lib/chart.min.js"></script>
+    <script src="../js/storage.js"></script>
+            <script src="../js/auth.js"></script>
+    <script src="../js/taskManager.js"></script>
+    <script src="../js/progressTracker.js"></script>
+    <script src="../js/chartUtils.js"></script>
+
+    <!-- Progress specific JavaScript -->
+    <script>
+        // 全局变量
+        let currentUser = null;
+        let timer = null;
+        let timerSeconds = 0;
+        let timerDuration = 25 * 60; // 默认25分钟
+        let isTimerRunning = false;
+        let progressStats = null;
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查用户登录状态
+            if (!Auth.isLoggedIn()) {
+                window.location.href = '../index.html';
+                return;
+            }
+
+            // 初始化进度页面
+            initializeProgressPage();
+        });
+
+        /**
+         * 初始化进度页面
+         */
+        function initializeProgressPage() {
+            currentUser = Auth.getCurrentUser();
+            loadUserInfo();
+            loadProgressStats();
+            loadTasks();
+            loadRecentRecords();
+            initializeCharts();
+            initializeHeatmap();
+            updateGoals();
+        }
+
+        /**
+         * 加载用户信息
+         */
+        function loadUserInfo() {
+            if (currentUser) {
+                document.getElementById('currentUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserName').textContent = currentUser.username;
+                document.getElementById('sidebarUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
+                document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            }
+        }
+
+        /**
+         * 加载学习统计数据
+         */
+        function loadProgressStats() {
+            if (!currentUser) return;
+
+            progressStats = ProgressTracker.getProgressStats(currentUser.id);
+
+            // 更新统计卡片
+            document.getElementById('totalTime').textContent = Math.round(progressStats.totalTimeSpent / 60 * 10) / 10;
+            document.getElementById('studyDays').textContent = Object.keys(progressStats.dailyStats).length;
+            document.getElementById('avgTime').textContent = progressStats.averageTimeSpent;
+            document.getElementById('satisfaction').textContent = progressStats.averageSatisfaction;
+        }
+
+        /**
+         * 加载任务列表
+         */
+        function loadTasks() {
+            if (!currentUser) return;
+
+            const tasks = TaskManager.getUserTasks(currentUser.id);
+            const taskSelect = document.getElementById('taskSelect');
+            const progressTaskSelect = document.getElementById('progressTask');
+
+            taskSelect.innerHTML = '<option value="">选择任务...</option>' +
+                tasks.filter(t => t.status !== 'Completed').map(task =>
+                    `<option value="${task.id}">${task.title}</option>`
+                ).join('');
+
+            progressTaskSelect.innerHTML = '<option value="">请选择任务...</option>' +
+                tasks.map(task =>
+                    `<option value="${task.id}">${task.title}</option>`
+                ).join('');
+        }
+
+        /**
+         * 加载最近学习记录
+         */
+        function loadRecentRecords() {
+            if (!currentUser) return;
+
+            const recentRecords = ProgressTracker.getUserProgress(currentUser.id, {
+                sortBy: 'completedAt',
+                sortOrder: 'desc'
+            }).slice(0, 10);
+
+            const recordsContainer = document.getElementById('recentRecords');
+
+            if (recentRecords.length === 0) {
+                recordsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="bi bi-clock-history"></i>
+                        <h6>暂无学习记录</h6>
+                        <p>开始记录您的学习进度吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            recordsContainer.innerHTML = recentRecords.map(record => {
+                const task = Storage.getById('tasks', record.taskId);
+                const taskTitle = task ? task.title : '未知任务';
+                const date = new Date(record.completedAt);
+
+                return `
+                    <div class="progress-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">${taskTitle}</h6>
+                                <p class="mb-1 text-muted">${record.notes || '无备注'}</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> ${record.timeSpent} 分钟
+                                    ${record.difficulty ? `<span class="ms-2">难度: ${getDifficultyText(record.difficulty)}</span>` : ''}
+                                    ${record.satisfaction ? `<span class="ms-2">满意度: ${getSatisfactionStars(record.satisfaction)}</span>` : ''}
+                                </small>
+                            </div>
+                            <small class="text-muted">
+                                ${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+                            </small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * 初始化图表
+         */
+        function initializeCharts() {
+            if (!currentUser) return;
+
+            // 学习时间趋势图
+            updateTimeChart();
+
+            // 任务完成情况饼图
+            const taskStats = TaskManager.getTaskStats(currentUser.id);
+            ChartUtils.createTaskStatusPieChart('taskCompletionChart', taskStats, {
+                title: false
+            });
+
+            // 学习时间分布图
+            createStudyDistributionChart();
+        }
+
+        /**
+         * 更新学习时间趋势图
+         */
+        function updateTimeChart() {
+            if (!currentUser) return;
+
+            const days = parseInt(document.getElementById('timeRangeSelect').value);
+            const endDate = new Date();
+            const startDate = new Date(endDate.getTime() - (days - 1) * 24 * 60 * 60 * 1000);
+
+            const progressData = ProgressTracker.getUserProgress(currentUser.id, {
+                dateFrom: startDate.toISOString(),
+                dateTo: endDate.toISOString()
+            });
+
+            const chartData = progressData.map(record => ({
+                date: record.completedAt.split('T')[0],
+                timeSpent: record.timeSpent || 0
+            }));
+
+            ChartUtils.createLearningTimeLineChart('learningTrendChart', chartData, {
+                title: false,
+                timeUnit: days <= 7 ? 'day' : 'week'
+            });
+        }
+
+        /**
+         * 创建学习时间分布图
+         */
+        function createStudyDistributionChart() {
+            if (!currentUser) return;
+
+            const stats = ProgressTracker.getProgressStats(currentUser.id);
+            const difficultyData = [
+                { label: '简单', value: stats.byDifficulty.easy || 0, color: '#198754' },
+                { label: '中等', value: stats.byDifficulty.medium || 0, color: '#ffc107' },
+                { label: '困难', value: stats.byDifficulty.hard || 0, color: '#dc3545' }
+            ];
+
+            const canvas = document.getElementById('studyDistributionChart');
+            if (!canvas) return;
+
+            // 销毁已存在的图表
+            if (window.studyDistributionChartInstance) {
+                window.studyDistributionChartInstance.destroy();
+            }
+
+            window.studyDistributionChartInstance = new Chart(canvas, {
+                type: 'doughnut',
+                data: {
+                    labels: difficultyData.map(d => d.label),
+                    datasets: [{
+                        data: difficultyData.map(d => d.value),
+                        backgroundColor: difficultyData.map(d => d.color),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = total > 0 ? Math.round((context.parsed / total) * 100) : 0;
+                                    return `${context.label}: ${context.parsed} 次 (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * 初始化热力图
+         */
+        function initializeHeatmap() {
+            if (!currentUser) return;
+
+            const heatmapData = ProgressTracker.getHeatmapData(currentUser.id, 90);
+            const heatmapContainer = document.getElementById('heatmap');
+
+            heatmapContainer.innerHTML = heatmapData.map(item => `
+                <div class="heatmap-cell heatmap-${item.level}"
+                     title="${item.date}: ${formatTime(item.timeSpent)}"
+                     data-date="${item.date}"
+                     data-time="${item.timeSpent}">
+                </div>
+            `).join('');
+        }
+
+        /**
+         * 更新学习目标
+         */
+        function updateGoals() {
+            if (!currentUser || !progressStats) return;
+
+            const goals = {
+                dailyMinutes: 120,
+                weeklyMinutes: 600,
+                monthlyMinutes: 2400
+            };
+
+            const goalProgress = ProgressTracker.getGoalProgress(currentUser.id, goals);
+
+            // 更新每日目标
+            if (goalProgress.daily) {
+                document.getElementById('dailyProgress').textContent = goalProgress.daily.percentage + '%';
+                document.getElementById('dailyProgressBar').style.width = goalProgress.daily.percentage + '%';
+                document.getElementById('dailyTarget').textContent = goals.dailyMinutes + ' 分钟';
+            }
+
+            // 更新每周目标
+            if (goalProgress.weekly) {
+                document.getElementById('weeklyProgress').textContent = goalProgress.weekly.percentage + '%';
+                document.getElementById('weeklyProgressBar').style.width = goalProgress.weekly.percentage + '%';
+                document.getElementById('weeklyTarget').textContent = goals.weeklyMinutes + ' 分钟';
+            }
+
+            // 更新每月目标
+            if (goalProgress.monthly) {
+                document.getElementById('monthlyProgress').textContent = goalProgress.monthly.percentage + '%';
+                document.getElementById('monthlyProgressBar').style.width = goalProgress.monthly.percentage + '%';
+                document.getElementById('monthlyTarget').textContent = goals.monthlyMinutes + ' 分钟';
+            }
+        }
+
+        /**
+         * 番茄钟功能
+         */
+        function setTimer(minutes) {
+            timerDuration = minutes * 60;
+            timerSeconds = timerDuration;
+            updateTimerDisplay();
+        }
+
+        function startTimer() {
+            if (isTimerRunning) return;
+
+            isTimerRunning = true;
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'inline-block';
+
+            timer = setInterval(() => {
+                timerSeconds--;
+                updateTimerDisplay();
+
+                if (timerSeconds <= 0) {
+                    completeTimer();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (!isTimerRunning) return;
+
+            isTimerRunning = false;
+            clearInterval(timer);
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').style.display = 'none';
+        }
+
+        function resetTimer() {
+            isTimerRunning = false;
+            clearInterval(timer);
+            timerSeconds = timerDuration;
+            updateTimerDisplay();
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('pauseBtn').style.display = 'none';
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            document.getElementById('timerDisplay').textContent =
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        function completeTimer() {
+            pauseTimer();
+            document.getElementById('completedTime').textContent = Math.floor(timerDuration / 60);
+
+            // 播放提示音（如果浏览器支持）
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmoeBy1+zOy9diMFl2z12p6lQBc1yOz5k00EBVGp8ey5YR4KPpzF4LJlJg0skMn017FfHhlfs/XEsxwFUpnJ6ppZEBU4xvOyr2MWhMC72MG3R');
+                audio.play();
+            } catch (e) {
+                // 忽略音频播放错误
+            }
+
+            // 显示完成模态框
+            const modal = new bootstrap.Modal(document.getElementById('timerCompleteModal'));
+            modal.show();
+        }
+
+        function saveTimerProgress() {
+            const taskId = document.getElementById('taskSelect').value;
+            const timeSpent = Math.floor(timerDuration / 60);
+
+            if (!taskId) {
+                alert('请选择一个任务');
+                return;
+            }
+
+            const result = ProgressTracker.createProgress({
+                userId: currentUser.id,
+                taskId: taskId,
+                timeSpent: timeSpent,
+                notes: '番茄钟学习',
+                progressType: 'timer'
+            });
+
+            if (result.success) {
+                // 更新任务用时
+                TaskManager.recordTime(taskId, timeSpent, currentUser.id);
+
+                alert(`成功记录 ${timeSpent} 分钟的学习时间！`);
+                bootstrap.Modal.getInstance(document.getElementById('timerCompleteModal')).hide();
+                resetTimer();
+                loadProgressStats();
+                loadRecentRecords();
+                updateGoals();
+            } else {
+                alert('记录失败：' + result.message);
+            }
+        }
+
+        function restartTimer() {
+            bootstrap.Modal.getInstance(document.getElementById('timerCompleteModal')).hide();
+            resetTimer();
+            startTimer();
+        }
+
+        /**
+         * 记录进度相关功能
+         */
+        function openRecordProgressModal() {
+            const modal = new bootstrap.Modal(document.getElementById('recordProgressModal'));
+            modal.show();
+        }
+
+        function saveProgress() {
+            if (!currentUser) return;
+
+            const taskId = document.getElementById('progressTask').value;
+            const timeSpent = parseInt(document.getElementById('progressTime').value);
+            const difficulty = document.getElementById('progressDifficulty').value;
+            const satisfaction = parseInt(document.getElementById('progressSatisfaction').value);
+            const notes = document.getElementById('progressNotes').value.trim();
+            const tags = document.getElementById('progressTags').value
+                .split(',')
+                .map(tag => tag.trim())
+                .filter(tag => tag.length > 0);
+
+            if (!taskId) {
+                alert('请选择一个任务');
+                return;
+            }
+
+            if (!timeSpent || timeSpent <= 0) {
+                alert('请输入有效的学习时间');
+                return;
+            }
+
+            const result = ProgressTracker.createProgress({
+                userId: currentUser.id,
+                taskId: taskId,
+                timeSpent: timeSpent,
+                difficulty: difficulty,
+                satisfaction: satisfaction,
+                notes: notes,
+                tags: tags,
+                progressType: 'manual'
+            });
+
+            if (result.success) {
+                // 更新任务用时
+                TaskManager.recordTime(taskId, timeSpent, currentUser.id);
+
+                alert('学习进度记录成功！');
+                bootstrap.Modal.getInstance(document.getElementById('recordProgressModal')).hide();
+                document.getElementById('recordProgressForm').reset();
+                loadProgressStats();
+                loadRecentRecords();
+                updateGoals();
+            } else {
+                alert('记录失败：' + result.message);
+            }
+        }
+
+        /**
+         * 导出进度数据
+         */
+        function exportProgress() {
+            if (!currentUser) return;
+
+            const csvData = ProgressTracker.exportProgress(currentUser.id, {}, 'csv');
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `progress_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        /**
+         * 加载更多记录
+         */
+        function loadMoreRecords() {
+            // 这里可以实现分页加载或跳转到详细记录页面
+            alert('功能开发中...');
+        }
+
+        /**
+         * 辅助函数
+         */
+        function getDifficultyText(difficulty) {
+            const difficultyMap = {
+                easy: '简单',
+                medium: '中等',
+                hard: '困难'
+            };
+            return difficultyMap[difficulty] || difficulty;
+        }
+
+        function getSatisfactionStars(satisfaction) {
+            return '★'.repeat(satisfaction) + '☆'.repeat(5 - satisfaction);
+        }
+
+        function formatTime(minutes) {
+            if (minutes === 0) return '无学习记录';
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            if (hours > 0) {
+                return `${hours}小时${mins}分钟`;
+            } else {
+                return `${mins}分钟`;
+            }
+        }
+
+        /**
+         * 切换侧边栏（移动端）
+         */
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        /**
+         * 处理用户登出
+         */
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                Auth.logout();
+                window.location.href = '../index.html';
+            }
+        }
+
+        /**
+         * 切换主题
+         */
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+
+            // 更新图标
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = newTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        }
+
+        // 页面加载时恢复主题设置
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+
+            const themeIcon = document.getElementById('theme-icon');
+            themeIcon.className = savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon-stars';
+        });
+
+        // URL参数处理
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+
+            if (action === 'record') {
+                setTimeout(() => {
+                    openRecordProgressModal();
+                }, 500);
+            }
+        });
+    </script>
+</body>
+</html>
