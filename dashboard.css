@@ -704,3 +704,138 @@
     transform: translateY(-50%);
     color: var(--text-muted);
 }
+
+/* ================================
+   响应式设计
+   ================================ */
+@media (max-width: 1200px) {
+    .content-grid.three-columns {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+
+    .sidebar.show {
+        transform: translateX(0);
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .content-grid.two-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .content-area {
+        padding: 1rem;
+    }
+
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .page-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .filters-row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .filter-group,
+    .search-box {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .content-grid.three-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 576px) {
+    .top-navbar {
+        padding: 1rem;
+    }
+
+    .navbar-right {
+        gap: 0.5rem;
+    }
+
+    .page-title {
+        font-size: 1.5rem;
+    }
+
+    .stats-value {
+        font-size: 2rem;
+    }
+
+    .chart-wrapper {
+        height: 250px;
+    }
+
+    .task-column {
+        min-height: 300px;
+        padding: 0.75rem;
+    }
+
+    .task-card {
+        padding: 1rem;
+    }
+}
+
+/* 打印时的样式 */
+@media print {
+    .sidebar,
+    .top-navbar,
+    .page-actions,
+    .filters-section,
+    .task-actions {
+        display: none !important;
+    }
+
+    .main-content {
+        margin-left: 0;
+    }
+
+    .content-area {
+        padding: 0;
+    }
+
+    .task-card,
+    .resource-card,
+    .chart-container {
+        box-shadow: none;
+        border: 1px solid #000;
+        break-inside: avoid;
+    }
+}
+
+/* 深色主题特殊调整 */
+[data-theme="dark"] .stats-card::before {
+    background: linear-gradient(135deg, var(--info-color), transparent);
+    opacity: 0.05;
+}
+
+[data-theme="dark"] .task-column.drag-over {
+    background-color: rgba(13, 110, 253, 0.1);
+}
