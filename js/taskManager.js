@@ -645,12 +645,23 @@ class TaskManager {
 }
 
 // 创建全局任务管理器实例
-const TaskManager = new TaskManager();
+let TaskManagerInstance;
 
+try {
+    // 避免命名冲突，使用不同的方式创建实例
+    const TaskManagerClass = class extends TaskManager {};
+    TaskManagerInstance = new TaskManagerClass();
 
-// 导出任务管理器（支持模块化环境）
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { TaskManager };
-} else if (typeof window !== 'undefined') {
-    window.TaskManager = TaskManager;
+    // 导出任务管理器（支持模块化环境）
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = { TaskManager, TaskManagerInstance, TaskManagerClass };
+    } else if (typeof window !== 'undefined') {
+        // 确保只设置一次，并且不被覆盖
+        if (typeof window.TaskManager === 'undefined') {
+            window.TaskManager = TaskManagerInstance;
+            console.log('TaskManager已正确初始化');
+        }
+    }
+} catch (error) {
+    console.error('TaskManager初始化失败:', error);
 }

@@ -344,6 +344,220 @@
     <script src="../js/taskManager.js"></script>
     <script src="../js/progressTracker.js"></script>
 
+    <!-- 强制初始化脚本 -->
+    <script>
+        // 创建一个绝对安全的任务管理器
+        console.log('开始创建SafeTaskManager...');
+
+        // 创建独立的任务管理器，不受任何冲突影响
+        window.SafeTaskManager = new (function() {
+                this.storageKey = 'tasks';
+                this.progressKey = 'progress';
+
+                this.createTask = function(taskData, userId) {
+                    // 验证必需字段
+                    if (!taskData.title) {
+                        return { success: false, message: '请输入任务标题' };
+                    }
+
+                    if (!userId) {
+                        return { success: false, message: '用户未登录' };
+                    }
+
+                    const newTask = {
+                        id: Date.now().toString() + Math.random().toString(36).substr(2),
+                        title: taskData.title.trim(),
+                        description: taskData.description ? taskData.description.trim() : '',
+                        priority: taskData.priority || 'Medium',
+                        deadline: taskData.deadline || null,
+                        userId: userId, // 使用传入的用户ID
+                        status: taskData.status || 'Todo',
+                        tags: Array.isArray(taskData.tags) ? taskData.tags : [],
+                        estimatedTime: taskData.estimatedTime || null,
+                        actualTime: 0,
+                        completedAt: null,
+                        createdAt: new Date().toISOString()
+                    };
+
+                    try {
+                        const existingTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                        existingTasks.push(newTask);
+                        localStorage.setItem('ls_tasks', JSON.stringify(existingTasks));
+                        return { success: true, message: '任务创建成功！', task: newTask };
+                    } catch (error) {
+                        console.error('创建任务失败:', error);
+                        return { success: false, message: '任务创建失败，系统错误' };
+                    }
+                };
+
+                this.getUserTasks = function(userId, filters = {}) {
+                    try {
+                        const allTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                        let userTasks = allTasks.filter(task => task.userId === userId);
+
+                        if (filters.status) {
+                            userTasks = userTasks.filter(task => task.status === filters.status);
+                        }
+                        if (filters.priority) {
+                            userTasks = userTasks.filter(task => task.priority === filters.priority);
+                        }
+                        if (filters.search) {
+                            const searchLower = filters.search.toLowerCase();
+                            userTasks = userTasks.filter(task =>
+                                task.title.toLowerCase().includes(searchLower) ||
+                                task.description.toLowerCase().includes(searchLower)
+                            );
+                        }
+
+                        // 默认按创建时间倒序排列
+                        userTasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                        return userTasks;
+                    } catch (error) {
+                        console.error('获取用户任务失败:', error);
+                        return [];
+                    }
+                };
+
+                this.getTask = function(taskId, userId) {
+                    try {
+                        const allTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                        const task = allTasks.find(t => t.id === taskId);
+                        return task && task.userId === userId ? task : null;
+                    } catch (error) {
+                        console.error('获取任务失败:', error);
+                        return null;
+                    }
+                };
+
+                this.updateTask = function(taskId, updates, userId) {
+                    try {
+                        const allTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                        const taskIndex = allTasks.findIndex(t => t.id === taskId && t.userId === userId);
+
+                        if (taskIndex === -1) {
+                            return { success: false, message: '任务不存在或无权限访问' };
+                        }
+
+                        allTasks[taskIndex] = { ...allTasks[taskIndex], ...updates, updatedAt: new Date().toISOString() };
+                        localStorage.setItem('ls_tasks', JSON.stringify(allTasks));
+
+                        return { success: true, message: '任务更新成功！', task: allTasks[taskIndex] };
+                    } catch (error) {
+                        console.error('更新任务失败:', error);
+                        return { success: false, message: '任务更新失败，系统错误' };
+                    }
+                };
+
+                this.deleteTask = function(taskId, userId) {
+                    try {
+                        const allTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                        const filteredTasks = allTasks.filter(t => !(t.id === taskId && t.userId === userId));
+
+                        if (filteredTasks.length === allTasks.length) {
+                            return { success: false, message: '任务不存在或无权限访问' };
+                        }
+
+                        localStorage.setItem('ls_tasks', JSON.stringify(filteredTasks));
+                        return { success: true, message: '任务删除成功！' };
+                    } catch (error) {
+                        console.error('删除任务失败:', error);
+                        return { success: false, message: '任务删除失败，系统错误' };
+                    }
+                };
+
+                this.getTaskStats = function(userId) {
+                    try {
+                        const userTasks = this.getUserTasks(userId);
+                        const stats = {
+                            total: userTasks.length,
+                            byStatus: { Todo: 0, InProgress: 0, Completed: 0 },
+                            byPriority: { High: 0, Medium: 0, Low: 0 },
+                            overdue: 0,
+                            completedThisWeek: 0,
+                            completionRate: 0
+                        };
+
+                        const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+                        const now = new Date();
+
+                        userTasks.forEach(task => {
+                            stats.byStatus[task.status]++;
+                            stats.byPriority[task.priority]++;
+
+                            if (task.deadline && task.status !== 'Completed') {
+                                const deadline = new Date(task.deadline);
+                                if (deadline < now) stats.overdue++;
+                            }
+
+                            if (task.status === 'Completed' && task.completedAt) {
+                                const completedAt = new Date(task.completedAt);
+                                if (completedAt >= weekAgo) stats.completedThisWeek++;
+                            }
+                        });
+
+                        stats.completionRate = stats.total > 0 ? Math.round((stats.byStatus.Completed / stats.total) * 100) : 0;
+
+                        return stats;
+                    } catch (error) {
+                        console.error('获取任务统计失败:', error);
+                        return {
+                            total: 0, byStatus: { Todo: 0, InProgress: 0, Completed: 0 },
+                            byPriority: { High: 0, Medium: 0, Low: 0 },
+                            overdue: 0, completedThisWeek: 0, completionRate: 0
+                        };
+                    }
+                };
+
+                this.recordTime = function(taskId, minutes, userId) {
+                    if (minutes <= 0) {
+                        return { success: false, message: '时间必须大于0' };
+                    }
+
+                    const task = this.getTask(taskId, userId);
+                    if (!task) {
+                        return { success: false, message: '任务不存在或无权限访问' };
+                    }
+
+                    const currentActualTime = task.actualTime || 0;
+                    const result = this.updateTask(taskId, { actualTime: currentActualTime + minutes }, userId);
+
+                    if (result.success) {
+                        return { success: true, message: `成功记录 ${minutes} 分钟`, task: result.task };
+                    } else {
+                        return { success: false, message: '记录时间失败，请稍后重试' };
+                    }
+                };
+
+                this.exportTasks = function(userId, format = 'json') {
+                    const tasks = this.getUserTasks(userId);
+
+                    if (format === 'csv') {
+                        const headers = ['ID', '标题', '描述', '优先级', '状态', '截止日期', '预估时间', '实际用时', '标签', '创建时间'];
+                        const rows = tasks.map(task => [
+                            task.id,
+                            `"${task.title}"`,
+                            `"${task.description}"`,
+                            task.priority,
+                            task.status,
+                            task.deadline || '',
+                            task.estimatedTime || '',
+                            task.actualTime || '',
+                            `"${task.tags.join('; ')}"`,
+                            task.createdAt
+                        ]);
+                        return [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+                    } else {
+                        return JSON.stringify(tasks, null, 2);
+                    }
+                };
+        })();
+
+        console.log('SafeTaskManager初始化完成，类型:', typeof window.SafeTaskManager);
+        console.log('createTask方法:', typeof window.SafeTaskManager.createTask);
+        console.log('getUserTasks方法:', typeof window.SafeTaskManager.getUserTasks);
+    </script>
+
     <!-- Tasks specific JavaScript -->
     <script>
         // 全局变量
@@ -373,6 +587,10 @@
          * 初始化任务页面
          */
         function initializeTasksPage() {
+            console.log('初始化任务页面...');
+            console.log('Auth可用:', typeof Auth);
+            console.log('Auth.isLoggedIn():', Auth.isLoggedIn());
+
             loadUserInfo();
             loadTasks();
             updateTaskCounts();
@@ -382,12 +600,36 @@
          * 加载用户信息
          */
         function loadUserInfo() {
+            console.log('开始加载用户信息...');
             const currentUser = Auth.getCurrentUser();
+            console.log('获取到的用户信息:', currentUser);
+
             if (currentUser) {
+                console.log('用户名:', currentUser.username);
+                console.log('用户ID:', currentUser.id);
                 document.getElementById('currentUserName').textContent = currentUser.username;
                 document.getElementById('sidebarUserName').textContent = currentUser.username;
                 document.getElementById('sidebarUserRole').textContent = currentUser.role === 'admin' ? '管理员' : '普通用户';
                 document.getElementById('userAvatar').textContent = currentUser.username.charAt(0).toUpperCase();
+            } else {
+                console.error('无法获取用户信息');
+                // 尝试直接从sessionStorage获取
+                try {
+                    const sessionData = sessionStorage.getItem('learnsync_current_user');
+                    console.log('sessionStorage数据:', sessionData);
+                    if (sessionData) {
+                        const parsedUser = JSON.parse(sessionData);
+                        console.log('从sessionStorage解析的用户:', parsedUser);
+                        if (parsedUser) {
+                            document.getElementById('currentUserName').textContent = parsedUser.username;
+                            document.getElementById('sidebarUserName').textContent = parsedUser.username;
+                            document.getElementById('sidebarUserRole').textContent = parsedUser.role === 'admin' ? '管理员' : '普通用户';
+                            document.getElementById('userAvatar').textContent = parsedUser.username.charAt(0).toUpperCase();
+                        }
+                    }
+                } catch (error) {
+                    console.error('从sessionStorage读取用户信息失败:', error);
+                }
             }
         }
 
@@ -398,7 +640,13 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            currentTasks = TaskManager.getUserTasks(currentUser.id, currentFilters);
+            // 使用独立的任务系统
+            if (typeof window.SafeTaskManager !== 'undefined') {
+                currentTasks = window.SafeTaskManager.getUserTasks(currentUser.id, currentFilters);
+            } else {
+                console.error('SafeTaskManager未定义');
+                currentTasks = [];
+            }
 
             if (currentView === 'list') {
                 renderListView();
@@ -568,7 +816,7 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            const result = TaskManager.updateTask(taskId, { status: newStatus }, currentUser.id);
+            const result = window.SafeTaskManager.updateTask(taskId, { status: newStatus }, currentUser.id);
 
             if (result.success) {
                 loadTasks();
@@ -640,7 +888,7 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            const task = TaskManager.getTask(taskId, currentUser.id);
+            const task = window.SafeTaskManager.getTask(taskId, currentUser.id);
             if (!task) {
                 alert('任务不存在或无权限访问');
                 return;
@@ -677,8 +925,69 @@
          * 保存任务
          */
         function saveTask() {
+            console.log('saveTask被调用');
+            console.log('SafeTaskManager可用:', typeof window.SafeTaskManager);
+            console.log('Auth可用:', typeof Auth);
+            console.log('Auth.isLoggedIn():', Auth.isLoggedIn());
+
             const currentUser = Auth.getCurrentUser();
-            if (!currentUser) return;
+            console.log('当前用户信息:', currentUser);
+            console.log('用户ID:', currentUser ? currentUser.id : 'null');
+            console.log('用户名:', currentUser ? currentUser.username : 'null');
+
+            if (!currentUser) {
+                console.error('无法获取当前用户信息');
+                // 尝试从sessionStorage直接获取用户信息
+                try {
+                    const sessionData = sessionStorage.getItem('learnsync_current_user');
+                    console.log('sessionStorage中的用户数据:', sessionData);
+                    if (sessionData) {
+                        const parsedUser = JSON.parse(sessionData);
+                        console.log('解析后的用户数据:', parsedUser);
+                        if (parsedUser && parsedUser.id) {
+                            // 使用sessionStorage中的用户信息
+                            const taskId = document.getElementById('taskId').value;
+                            const taskData = {
+                                title: document.getElementById('taskTitle').value.trim(),
+                                description: document.getElementById('taskDescription').value.trim(),
+                                priority: document.getElementById('taskPriority').value,
+                                status: document.getElementById('taskStatus').value,
+                                estimatedTime: parseInt(document.getElementById('taskEstimatedTime').value) || null,
+                                tags: document.getElementById('taskTags').value
+                                    .split(',')
+                                    .map(tag => tag.trim())
+                                    .filter(tag => tag.length > 0)
+                            };
+
+                            const deadlineInput = document.getElementById('taskDeadline').value;
+                            if (deadlineInput) {
+                                taskData.deadline = new Date(deadlineInput).toISOString();
+                            }
+
+                            if (!taskData.title) {
+                                alert('请输入任务标题');
+                                return;
+                            }
+
+                            const result = window.SafeTaskManager.createTask(taskData, parsedUser.id);
+                            if (result.success) {
+                                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
+                                loadTasks();
+                                updateTaskCounts();
+                                alert('任务创建成功！');
+                            } else {
+                                alert(result.message);
+                            }
+                            return;
+                        }
+                    }
+                } catch (error) {
+                    console.error('从sessionStorage获取用户信息失败:', error);
+                }
+
+                alert('用户未登录，请重新登录');
+                return;
+            }
 
             const taskId = document.getElementById('taskId').value;
             const taskData = {
@@ -690,8 +999,7 @@
                 tags: document.getElementById('taskTags').value
                     .split(',')
                     .map(tag => tag.trim())
-                    .filter(tag => tag.length > 0),
-                userId: currentUser.id
+                    .filter(tag => tag.length > 0)
             };
 
             // 处理截止日期
@@ -700,19 +1008,13 @@
                 taskData.deadline = new Date(deadlineInput).toISOString();
             }
 
-            // 验证必填字段
-            if (!taskData.title) {
-                alert('请输入任务标题');
-                return;
-            }
-
             let result;
             if (taskId) {
                 // 更新任务
-                result = TaskManager.updateTask(taskId, taskData, currentUser.id);
+                result = window.SafeTaskManager.updateTask(taskId, taskData, currentUser.id);
             } else {
-                // 创建任务
-                result = TaskManager.createTask(taskData);
+                // 创建任务 - 传递用户ID和任务数据
+                result = window.SafeTaskManager.createTask(taskData, currentUser.id);
             }
 
             if (result.success) {
@@ -749,7 +1051,7 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            const result = TaskManager.deleteTask(taskId, currentUser.id);
+              const result = window.SafeTaskManager.deleteTask(taskId, currentUser.id);
 
             if (result.success) {
                 bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
@@ -768,7 +1070,7 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            const task = TaskManager.getTask(taskId, currentUser.id);
+            const task = window.SafeTaskManager.getTask(taskId, currentUser.id);
             if (!task) {
                 alert('任务不存在或无权限访问');
                 return;
@@ -799,7 +1101,7 @@
                 return;
             }
 
-            const result = TaskManager.recordTime(taskId, timeSpent, currentUser.id);
+            const result = window.SafeTaskManager.recordTime(taskId, timeSpent, currentUser.id);
 
             if (result.success) {
                 // 创建进度记录
@@ -827,7 +1129,7 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            const taskStats = TaskManager.getTaskStats(currentUser.id);
+            const taskStats = window.SafeTaskManager.getTaskStats(currentUser.id);
             document.getElementById('taskCount').textContent = taskStats.byStatus.Todo + taskStats.byStatus.InProgress;
         }
 
@@ -838,7 +1140,7 @@
             const currentUser = Auth.getCurrentUser();
             if (!currentUser) return;
 
-            const csvData = TaskManager.exportTasks(currentUser.id, 'csv');
+            const csvData = window.SafeTaskManager.exportTasks(currentUser.id, 'csv');
             const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             const url = URL.createObjectURL(blob);

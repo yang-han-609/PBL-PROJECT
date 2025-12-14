@@ -418,14 +418,14 @@ class StorageManager {
         let updated = false;
 
         const updatedUsers = users.map(user => {
+            let updatedUser = { ...user };
+
             if (user.isActive === undefined) {
+                updatedUser.isActive = true; // 默认启用所有现有用户
                 updated = true;
-                return {
-                    ...user,
-                    isActive: true // 默认启用所有现有用户
-                };
             }
-            return user;
+
+            return updatedUser;
         });
 
         if (updated) {

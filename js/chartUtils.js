@@ -924,13 +924,13 @@ class ChartUtils {
 }
 
 // 创建全局图表工具实例
-const ChartUtils = new ChartUtils();
+const ChartUtilsInstance = new ChartUtils();
 
 // 导出图表工具（支持模块化环境）
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ChartUtils };
+    module.exports = { ChartUtils, ChartUtilsInstance };
 } else if (typeof window !== 'undefined') {
-    window.ChartUtils = ChartUtils;
+    window.ChartUtils = ChartUtilsInstance;
 }
 
 // 监听主题变化，自动更新图表主题

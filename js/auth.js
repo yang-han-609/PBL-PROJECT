@@ -288,7 +288,31 @@ class AuthManager {
                 return null;
             }
 
-            return JSON.parse(sessionData);
+            const userData = JSON.parse(sessionData);
+
+            // 确保用户数据包含ID字段
+            if (!userData.id) {
+                console.warn('用户数据缺少ID字段，尝试重新获取完整用户信息');
+                const fullUser = Storage.getById(this.storageKey, userData.username ?
+                    Storage.findOne(this.storageKey, u => u.username === userData.username)?.id :
+                    Storage.findOne(this.storageKey, u => u.email === userData.email)?.id);
+
+                if (fullUser) {
+                    // 更新sessionData以包含完整用户信息
+                    const updatedUserData = {
+                        ...userData,
+                        id: fullUser.id,
+                        isActive: fullUser.isActive
+                    };
+                    sessionStorage.setItem(this.sessionKey, JSON.stringify(updatedUserData));
+                    return updatedUserData;
+                } else {
+                    console.error('无法找到对应的用户信息');
+                    return null;
+                }
+            }
+
+            return userData;
         } catch (error) {
             console.error('获取当前用户失败:', error);
             return null;

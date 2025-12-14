@@ -785,11 +785,11 @@ class ProgressTracker {
 }
 
 // 创建全局进度跟踪器实例
-const ProgressTracker = new ProgressTracker();
+const ProgressTrackerInstance = new ProgressTracker();
 
 // 导出进度跟踪器（支持模块化环境）
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { ProgressTracker };
+    module.exports = { ProgressTracker, ProgressTrackerInstance };
 } else if (typeof window !== 'undefined') {
-    window.ProgressTracker = ProgressTracker;
+    window.ProgressTracker = ProgressTrackerInstance;
 }
