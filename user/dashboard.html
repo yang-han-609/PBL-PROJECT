@@ -326,6 +326,25 @@
     <script src="../js/progressTracker.js"></script>
     <script src="../js/chartUtils.js"></script>
 
+    <!-- 修复脚本 -->
+    <script>
+        // 强制修复所有管理器实例问题
+        if (typeof TaskManagerInstance !== 'undefined') {
+            window.TaskManager = TaskManagerInstance;
+        }
+        if (typeof ProgressTrackerInstance !== 'undefined') {
+            window.ProgressTracker = ProgressTrackerInstance;
+        }
+        if (typeof ChartUtilsInstance !== 'undefined') {
+            window.ChartUtils = ChartUtilsInstance;
+        }
+
+        // 防止被覆盖
+        Object.defineProperty(window, 'TaskManager', { writable: false, configurable: false });
+        Object.defineProperty(window, 'ProgressTracker', { writable: false, configurable: false });
+        Object.defineProperty(window, 'ChartUtils', { writable: false, configurable: false });
+    </script>
+
     <!-- Dashboard specific JavaScript -->
     <script>
         // 页面加载完成后执行
