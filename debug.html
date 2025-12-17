@@ -48,7 +48,13 @@
     </div>
 
     <div class="debug-section">
-        <h2>7. 清除和修复数据</h2>
+        <h2>7. 资源创建测试</h2>
+        <button onclick="testResourceCreation()">测试资源创建</button>
+        <div id="resource-test-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>8. 清除和修复数据</h2>
         <button onclick="clearAuthData()">清除认证数据</button>
         <button onclick="forceFixSession()">强制修复会话数据</button>
         <button onclick="clearAllData()">清除所有LocalStorage数据</button>
@@ -62,6 +68,7 @@
     <script src="lib/md5.min.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/auth.js"></script>
+    <script src="js/resourceManager.js"></script>
 
     <script>
         // 页面加载完成后执行所有测试
@@ -434,6 +441,115 @@
                 statusDiv.innerHTML += '<p class="info">请重新登录以创建新的会话</p>';
             } catch (error) {
                 statusDiv.innerHTML = '<div class="alert alert-danger">❌ 清除认证数据失败: ' + error.message + '</div>';
+            }
+        }
+
+        function testResourceCreation() {
+            const statusDiv = document.getElementById('resource-test-status');
+            let html = '';
+
+            try {
+                // 首先检查用户状态
+                html += '<p><strong>步骤1: 检查用户状态</strong></p>';
+                const currentUser = Auth.getCurrentUser();
+
+                if (!currentUser) {
+                    html += '<p class="error">❌ 用户未登录，无法测试资源创建</p>';
+                    statusDiv.innerHTML = html;
+                    return;
+                }
+
+                html += `<p class="success">✅ 当前用户: ${currentUser.username} (ID: ${currentUser.id})</p>`;
+
+                // 检查ResourceManager是否可用
+                html += '<p><strong>步骤2: 检查ResourceManager</strong></p>';
+                if (typeof ResourceManager === 'undefined') {
+                    html += '<p class="error">❌ ResourceManager未加载，创建临时版本...</p>';
+
+                    // 创建临时ResourceManager
+                    window.ResourceManager = {
+                        createResource: function(resourceData) {
+                            if (!resourceData.name || !resourceData.url || !resourceData.userId) {
+                                return { success: false, message: '资源名称、URL和用户ID不能为空' };
+                            }
+
+                            const newResource = {
+                                id: Date.now().toString() + Math.random().toString(36).substr(2),
+                                name: resourceData.name.trim(),
+                                url: resourceData.url.trim(),
+                                type: resourceData.type || 'link',
+                                description: resourceData.description ? resourceData.description.trim() : '',
+                                tags: resourceData.tags || [],
+                                userId: resourceData.userId,
+                                category: resourceData.category || '',
+                                difficulty: resourceData.difficulty || '',
+                                rating: resourceData.rating || 0,
+                                isFavorite: resourceData.isFavorite || false,
+                                accessCount: 0,
+                                createdAt: new Date().toISOString()
+                            };
+
+                            try {
+                                const existingResources = JSON.parse(localStorage.getItem('ls_resources') || '[]');
+                                existingResources.push(newResource);
+                                localStorage.setItem('ls_resources', JSON.stringify(existingResources));
+                                return { success: true, message: '资源创建成功！', resource: newResource };
+                            } catch (error) {
+                                console.error('创建资源失败:', error);
+                                return { success: false, message: '资源创建失败，系统错误' };
+                            }
+                        }
+                    };
+                    html += '<p class="success">✅ 临时ResourceManager创建成功</p>';
+                } else {
+                    html += '<p class="success">✅ ResourceManager已加载</p>';
+                }
+
+                // 创建测试资源数据
+                html += '<p><strong>步骤3: 创建测试资源</strong></p>';
+                const testResourceData = {
+                    name: '测试资源 ' + new Date().toLocaleTimeString(),
+                    url: 'https://example.com/test-resource',
+                    type: 'article',
+                    description: '这是一个调试测试资源',
+                    category: '测试',
+                    tags: ['测试', '调试', '资源']
+                };
+
+                html += `<p>测试资源数据: ${JSON.stringify(testResourceData)}</p>`;
+
+                // 调用ResourceManager.createResource
+                html += '<p><strong>步骤4: 调用ResourceManager.createResource</strong></p>';
+
+                const result = ResourceManager.createResource(testResourceData);
+
+                if (result.success) {
+                    html += '<p class="success">✅ 资源创建成功！</p>';
+                    html += `<p>资源ID: ${result.resource.id}</p>`;
+                    html += `<p>资源名称: ${result.resource.name}</p>`;
+                    html += `<pre>${JSON.stringify(result.resource, null, 2)}</pre>`;
+                } else {
+                    html += `<p class="error">❌ 资源创建失败: ${result.message}</p>`;
+                }
+
+                // 验证资源是否真的被保存
+                html += '<p><strong>步骤5: 验证资源保存</strong></p>';
+                const savedResources = JSON.parse(localStorage.getItem('ls_resources') || '[]');
+                const userResources = savedResources.filter(resource => resource.userId === currentUser.id);
+                html += `<p>总资源数: ${savedResources.length}</p>`;
+                html += `<p>当前用户资源数: ${userResources.length}</p>`;
+
+                if (userResources.length > 0) {
+                    html += '<p class="success">✅ 资源已成功保存到localStorage</p>';
+                    const latestResource = userResources[userResources.length - 1];
+                    html += `<p>最新资源: ${latestResource.name} (创建于: ${new Date(latestResource.createdAt).toLocaleString()})</p>`;
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                html += `<p class="error">❌ 测试资源创建失败: ${error.message}</p>`;
+                html += `<p class="error">错误堆栈: ${error.stack}</p>`;
+                statusDiv.innerHTML = html;
             }
         }
 

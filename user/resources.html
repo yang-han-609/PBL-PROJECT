@@ -337,6 +337,133 @@
     <script src="../lib/chart.min.js"></script>
     <script src="../js/chartUtils.js"></script>
 
+    <!-- ResourceManager 验证和备份 -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('验证ResourceManager加载状态...');
+            console.log('typeof ResourceManager:', typeof ResourceManager);
+
+            if (typeof ResourceManager === 'undefined') {
+                console.error('ResourceManager未加载，创建备用版本...');
+                // 创建备用ResourceManager
+                window.ResourceManager = {
+                    createResource: function(resourceData) {
+                        console.log('使用备用ResourceManager创建资源:', resourceData);
+
+                        if (!resourceData.name || !resourceData.url || !resourceData.userId) {
+                            return { success: false, message: '资源名称、URL和用户ID不能为空' };
+                        }
+
+                        const newResource = {
+                            id: Date.now().toString() + Math.random().toString(36).substr(2),
+                            name: resourceData.name.trim(),
+                            url: resourceData.url.trim(),
+                            type: resourceData.type || 'link',
+                            description: resourceData.description ? resourceData.description.trim() : '',
+                            tags: Array.isArray(resourceData.tags) ? resourceData.tags : [],
+                            userId: resourceData.userId,
+                            category: resourceData.category || '',
+                            difficulty: resourceData.difficulty || '',
+                            rating: resourceData.rating || 0,
+                            isFavorite: resourceData.isFavorite || false,
+                            accessCount: 0,
+                            createdAt: new Date().toISOString()
+                        };
+
+                        try {
+                            const existingResources = JSON.parse(localStorage.getItem('ls_resources') || '[]');
+                            existingResources.push(newResource);
+                            localStorage.setItem('ls_resources', JSON.stringify(existingResources));
+                            console.log('资源创建成功:', newResource);
+                            return { success: true, message: '资源创建成功！', resource: newResource };
+                        } catch (error) {
+                            console.error('创建资源失败:', error);
+                            return { success: false, message: '资源创建失败，系统错误' };
+                        }
+                    },
+                    getUserResources: function(userId, filters = {}) {
+                        try {
+                            const allResources = JSON.parse(localStorage.getItem('ls_resources') || '[]');
+                            let userResources = allResources.filter(resource => resource.userId === userId);
+
+                            // 应用简单的筛选
+                            if (filters.search) {
+                                const searchTerm = filters.search.toLowerCase();
+                                userResources = userResources.filter(resource =>
+                                    resource.name.toLowerCase().includes(searchTerm) ||
+                                    resource.description.toLowerCase().includes(searchTerm)
+                                );
+                            }
+
+                            if (filters.type) {
+                                userResources = userResources.filter(resource => resource.type === filters.type);
+                            }
+
+                            // 按创建时间排序
+                            userResources.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+                            return userResources;
+                        } catch (error) {
+                            console.error('获取用户资源失败:', error);
+                            return [];
+                        }
+                    },
+                    getResourceStats: function(userId) {
+                        try {
+                            const userResources = this.getUserResources(userId);
+                            return {
+                                total: userResources.length,
+                                favoriteCount: userResources.filter(r => r.isFavorite).length,
+                                totalAccessCount: userResources.reduce((sum, r) => sum + (r.accessCount || 0), 0),
+                                recentlyAdded: 0
+                            };
+                        } catch (error) {
+                            return { total: 0, favoriteCount: 0, totalAccessCount: 0, recentlyAdded: 0 };
+                        }
+                    },
+                    getAllTags: function(userId) {
+                        try {
+                            const userResources = this.getUserResources(userId);
+                            const tagCounts = {};
+
+                            userResources.forEach(resource => {
+                                if (resource.tags && Array.isArray(resource.tags)) {
+                                    resource.tags.forEach(tag => {
+                                        if (tag.trim()) {
+                                            const cleanTag = tag.trim();
+                                            tagCounts[cleanTag] = (tagCounts[cleanTag] || 0) + 1;
+                                        }
+                                    });
+                                }
+                            });
+
+                            return Object.entries(tagCounts)
+                                .map(([tag, count]) => ({ tag, count }))
+                                .sort((a, b) => b.count - a.count);
+                        } catch (error) {
+                            return [];
+                        }
+                    },
+                    updateResource: function(resourceId, updates, userId) {
+                        return { success: false, message: '更新功能暂时不可用' };
+                    },
+                    deleteResource: function(resourceId, userId) {
+                        return { success: false, message: '删除功能暂时不可用' };
+                    },
+                    recordAccess: function(resourceId, userId) {
+                        return { success: false, message: '访问记录功能暂时不可用' };
+                    },
+                    toggleFavorite: function(resourceId, userId) {
+                        return { success: false, message: '收藏功能暂时不可用' };
+                    }
+                };
+                console.log('备用ResourceManager创建完成');
+            } else {
+                console.log('ResourceManager已成功加载');
+            }
+        });
+    </script>
+
     <!-- Resources specific JavaScript -->
     <script>
         // 全局变量
