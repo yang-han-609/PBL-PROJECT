@@ -155,6 +155,15 @@ class AuthManager {
                 };
             }
 
+            // 确保用户有ID
+            if (!user.id) {
+                console.error('用户数据缺少ID字段:', user);
+                return {
+                    success: false,
+                    message: '用户数据异常，请联系管理员'
+                };
+            }
+
             // 更新用户登录信息
             const updatedUser = {
                 lastLogin: new Date().toISOString(),
@@ -163,7 +172,7 @@ class AuthManager {
 
             Storage.update(this.storageKey, user.id, updatedUser);
 
-            // 创建用户会话
+            // 创建用户会话 - 确保包含完整的用户信息
             const sessionData = {
                 id: user.id,
                 username: user.username,
@@ -173,6 +182,8 @@ class AuthManager {
                 loginTime: new Date().toISOString(),
                 rememberMe: rememberMe
             };
+
+            console.log('创建用户会话:', sessionData);
 
             // 保存到sessionStorage
             sessionStorage.setItem(this.sessionKey, JSON.stringify(sessionData));
@@ -277,12 +288,17 @@ class AuthManager {
      */
     getCurrentUser() {
         try {
-            if (!this.isLoggedIn()) {
-                return null;
-            }
+            // 首先检查sessionStorage
+            let sessionData = sessionStorage.getItem(this.sessionKey);
 
-            const sessionData = sessionStorage.getItem(this.sessionKey) ||
-                               localStorage.getItem(`${this.sessionKey}_remember`);
+            // 如果sessionStorage中没有，检查localStorage的记住我数据
+            if (!sessionData) {
+                sessionData = localStorage.getItem(`${this.sessionKey}_remember`);
+                if (sessionData) {
+                    // 恢复到sessionStorage
+                    sessionStorage.setItem(this.sessionKey, sessionData);
+                }
+            }
 
             if (!sessionData) {
                 return null;
@@ -293,28 +309,58 @@ class AuthManager {
             // 确保用户数据包含ID字段
             if (!userData.id) {
                 console.warn('用户数据缺少ID字段，尝试重新获取完整用户信息');
-                const fullUser = Storage.getById(this.storageKey, userData.username ?
-                    Storage.findOne(this.storageKey, u => u.username === userData.username)?.id :
-                    Storage.findOne(this.storageKey, u => u.email === userData.email)?.id);
+                let fullUser = null;
+
+                // 先尝试通过用户名查找
+                if (userData.username) {
+                    const foundUser = Storage.findOne(this.storageKey, u => u.username === userData.username);
+                    if (foundUser) {
+                        fullUser = Storage.getById(this.storageKey, foundUser.id);
+                    }
+                }
+
+                // 如果通过用户名没找到，尝试通过邮箱查找
+                if (!fullUser && userData.email) {
+                    const foundUser = Storage.findOne(this.storageKey, u => u.email === userData.email);
+                    if (foundUser) {
+                        fullUser = Storage.getById(this.storageKey, foundUser.id);
+                    }
+                }
 
                 if (fullUser) {
                     // 更新sessionData以包含完整用户信息
                     const updatedUserData = {
                         ...userData,
                         id: fullUser.id,
+                        username: fullUser.username,
+                        email: fullUser.email,
+                        role: fullUser.role,
+                        avatar: fullUser.avatar,
                         isActive: fullUser.isActive
                     };
                     sessionStorage.setItem(this.sessionKey, JSON.stringify(updatedUserData));
                     return updatedUserData;
                 } else {
                     console.error('无法找到对应的用户信息');
+                    // 清除无效的会话数据
+                    this.logout();
                     return null;
                 }
+            }
+
+            // 验证用户是否仍然存在且活跃
+            const currentUser = Storage.getById(this.storageKey, userData.id);
+            if (!currentUser || !currentUser.isActive) {
+                console.warn('用户不存在或已被禁用');
+                this.logout();
+                return null;
             }
 
             return userData;
         } catch (error) {
             console.error('获取当前用户失败:', error);
+            // 出现错误时清除可能损坏的会话数据
+            this.logout();
             return null;
         }
     }

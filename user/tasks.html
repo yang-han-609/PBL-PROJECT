@@ -591,9 +591,79 @@
             console.log('Auth可用:', typeof Auth);
             console.log('Auth.isLoggedIn():', Auth.isLoggedIn());
 
+            // 检查并修复用户会话
+            repairUserSession();
+
             loadUserInfo();
             loadTasks();
             updateTaskCounts();
+        }
+
+        /**
+         * 检查并修复用户会话
+         */
+        function repairUserSession() {
+            try {
+                console.log('检查用户会话状态...');
+
+                // 检查是否真的已登录
+                if (!Auth.isLoggedIn()) {
+                    console.warn('用户未登录，重定向到登录页');
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                let currentUser = Auth.getCurrentUser();
+
+                // 如果获取用户信息失败，尝试修复
+                if (!currentUser) {
+                    console.warn('无法获取用户信息，尝试修复会话...');
+
+                    // 尝试从localStorage的记住我数据恢复
+                    const rememberData = localStorage.getItem('learnsync_current_user_remember');
+                    if (rememberData) {
+                        try {
+                            const rememberedUser = JSON.parse(rememberData);
+                            if (rememberedUser && rememberedUser.id) {
+                                // 验证用户是否仍然存在
+                                const userExists = Storage.getById('users', rememberedUser.id);
+                                if (userExists && userExists.isActive) {
+                                    console.log('从记住我数据恢复用户会话');
+                                    // 重新创建会话
+                                    const sessionData = {
+                                        id: userExists.id,
+                                        username: userExists.username,
+                                        email: userExists.email,
+                                        role: userExists.role,
+                                        avatar: userExists.avatar,
+                                        loginTime: new Date().toISOString(),
+                                        rememberMe: true
+                                    };
+                                    sessionStorage.setItem('learnsync_current_user', JSON.stringify(sessionData));
+                                    currentUser = sessionData;
+                                    console.log('会话修复成功');
+                                }
+                            }
+                        } catch (error) {
+                            console.error('从记住我数据恢复失败:', error);
+                        }
+                    }
+                }
+
+                // 如果仍然无法获取用户信息，清除所有认证数据并重定向
+                if (!currentUser) {
+                    console.error('无法修复用户会话，清除所有认证数据');
+                    Auth.logout();
+                    window.location.href = '../index.html';
+                    return;
+                }
+
+                console.log('用户会话检查完成，当前用户:', currentUser.username);
+            } catch (error) {
+                console.error('修复用户会话时出错:', error);
+                Auth.logout();
+                window.location.href = '../index.html';
+            }
         }
 
         /**
@@ -930,14 +1000,27 @@
             console.log('Auth可用:', typeof Auth);
             console.log('Auth.isLoggedIn():', Auth.isLoggedIn());
 
-            const currentUser = Auth.getCurrentUser();
+            let currentUser = Auth.getCurrentUser();
             console.log('当前用户信息:', currentUser);
             console.log('用户ID:', currentUser ? currentUser.id : 'null');
             console.log('用户名:', currentUser ? currentUser.username : 'null');
 
+            // 如果无法获取用户信息，尝试多次获取
             if (!currentUser) {
-                console.error('无法获取当前用户信息');
-                // 尝试从sessionStorage直接获取用户信息
+                console.warn('第一次获取用户信息失败，尝试重新获取...');
+
+                // 等待一小段时间再尝试
+                setTimeout(() => {
+                    currentUser = Auth.getCurrentUser();
+                    if (currentUser) {
+                        console.log('重新获取用户信息成功:', currentUser);
+                        // 递归调用saveTask继续处理
+                        saveTask();
+                        return;
+                    }
+                }, 100);
+
+                // 尝试从sessionStorage直接获取用户信息作为最后的手段
                 try {
                     const sessionData = sessionStorage.getItem('learnsync_current_user');
                     console.log('sessionStorage中的用户数据:', sessionData);
@@ -945,47 +1028,37 @@
                         const parsedUser = JSON.parse(sessionData);
                         console.log('解析后的用户数据:', parsedUser);
                         if (parsedUser && parsedUser.id) {
-                            // 使用sessionStorage中的用户信息
-                            const taskId = document.getElementById('taskId').value;
-                            const taskData = {
-                                title: document.getElementById('taskTitle').value.trim(),
-                                description: document.getElementById('taskDescription').value.trim(),
-                                priority: document.getElementById('taskPriority').value,
-                                status: document.getElementById('taskStatus').value,
-                                estimatedTime: parseInt(document.getElementById('taskEstimatedTime').value) || null,
-                                tags: document.getElementById('taskTags').value
-                                    .split(',')
-                                    .map(tag => tag.trim())
-                                    .filter(tag => tag.length > 0)
-                            };
+                            // 验证用户是否仍然存在
+                            const userExists = Storage.getById('users', parsedUser.id);
+                            if (userExists && userExists.isActive) {
+                                console.log('用户验证成功，使用sessionStorage中的用户信息');
+                                // 重新设置完整的用户信息到sessionStorage
+                                sessionStorage.setItem('learnsync_current_user', JSON.stringify({
+                                    id: userExists.id,
+                                    username: userExists.username,
+                                    email: userExists.email,
+                                    role: userExists.role,
+                                    avatar: userExists.avatar,
+                                    loginTime: parsedUser.loginTime || new Date().toISOString()
+                                }));
 
-                            const deadlineInput = document.getElementById('taskDeadline').value;
-                            if (deadlineInput) {
-                                taskData.deadline = new Date(deadlineInput).toISOString();
-                            }
-
-                            if (!taskData.title) {
-                                alert('请输入任务标题');
+                                // 递归调用saveTask继续处理
+                                saveTask();
                                 return;
-                            }
-
-                            const result = window.SafeTaskManager.createTask(taskData, parsedUser.id);
-                            if (result.success) {
-                                bootstrap.Modal.getInstance(document.getElementById('taskModal')).hide();
-                                loadTasks();
-                                updateTaskCounts();
-                                alert('任务创建成功！');
                             } else {
-                                alert(result.message);
+                                console.error('用户不存在或已被禁用');
                             }
-                            return;
                         }
                     }
                 } catch (error) {
                     console.error('从sessionStorage获取用户信息失败:', error);
                 }
 
-                alert('用户未登录，请重新登录');
+                alert('用户未登录或会话已过期，请重新登录');
+                // 跳转到登录页面
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 2000);
                 return;
             }
 

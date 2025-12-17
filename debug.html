@@ -36,7 +36,21 @@
     </div>
 
     <div class="debug-section">
-        <h2>5. 清除和修复数据</h2>
+        <h2>5. 会话状态详细检查</h2>
+        <button onclick="checkSessionDetails()">检查会话详情</button>
+        <div id="session-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>6. 任务创建测试</h2>
+        <button onclick="testTaskCreation()">测试任务创建</button>
+        <div id="task-test-status"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>7. 清除和修复数据</h2>
+        <button onclick="clearAuthData()">清除认证数据</button>
+        <button onclick="forceFixSession()">强制修复会话数据</button>
         <button onclick="clearAllData()">清除所有LocalStorage数据</button>
         <button onclick="initDefaultData()">重新初始化默认数据</button>
         <button onclick="fixUsers()">修复用户isActive字段</button>
@@ -247,6 +261,255 @@
                 statusDiv.innerHTML += '<button onclick="location.reload()">重新加载页面测试登录</button>';
             } catch (error) {
                 statusDiv.innerHTML = `<p class="error">❌ 修复用户失败: ${error.message}</p>`;
+            }
+        }
+
+        function checkSessionDetails() {
+            const statusDiv = document.getElementById('session-status');
+            let html = '';
+
+            try {
+                // 检查sessionStorage
+                const sessionData = sessionStorage.getItem('learnsync_current_user');
+                html += '<p><strong>SessionStorage数据:</strong></p>';
+                if (sessionData) {
+                    const parsedSession = JSON.parse(sessionData);
+                    html += `<pre>${JSON.stringify(parsedSession, null, 2)}</pre>`;
+                    html += `<p class="info">SessionStorage中的用户ID: ${parsedSession.id || '未找到'}</p>`;
+                    html += `<p class="info">SessionStorage中的用户名: ${parsedSession.username || '未找到'}</p>`;
+                } else {
+                    html += '<p class="error">❌ SessionStorage中没有用户数据</p>';
+                }
+
+                // 检查localStorage记住我数据
+                const rememberData = localStorage.getItem('learnsync_current_user_remember');
+                html += '<p><strong>localStorage记住我数据:</strong></p>';
+                if (rememberData) {
+                    const parsedRemember = JSON.parse(rememberData);
+                    html += `<pre>${JSON.stringify(parsedRemember, null, 2)}</pre>`;
+                    html += `<p class="info">记住我数据中的用户ID: ${parsedRemember.id || '未找到'}</p>`;
+                } else {
+                    html += '<p class="info">ℹ️ localStorage中没有记住我数据</p>';
+                }
+
+                // 调用Auth.getCurrentUser()并记录详细过程
+                html += '<p><strong>Auth.getCurrentUser()调用过程:</strong></p>';
+                try {
+                    const currentUser = Auth.getCurrentUser();
+                    if (currentUser) {
+                        html += `<p class="success">✅ 成功获取当前用户</p>`;
+                        html += `<pre>${JSON.stringify(currentUser, null, 2)}</pre>`;
+                    } else {
+                        html += `<p class="error">❌ 无法获取当前用户</p>`;
+                    }
+                } catch (authError) {
+                    html += `<p class="error">❌ Auth.getCurrentUser()出错: ${authError.message}</p>`;
+                    html += `<p class="error">错误堆栈: ${authError.stack}</p>`;
+                }
+
+                // 检查Auth.isLoggedIn()
+                html += '<p><strong>Auth.isLoggedIn()结果:</strong></p>';
+                try {
+                    const isLoggedIn = Auth.isLoggedIn();
+                    html += `<p class="${isLoggedIn ? 'success' : 'error'}">${isLoggedIn ? '✅ 已登录' : '❌ 未登录'}</p>`;
+                } catch (loginError) {
+                    html += `<p class="error">❌ Auth.isLoggedIn()出错: ${loginError.message}</p>`;
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ 检查会话详情失败: ${error.message}</p>`;
+            }
+        }
+
+        function testTaskCreation() {
+            const statusDiv = document.getElementById('task-test-status');
+            let html = '';
+
+            try {
+                // 首先检查用户状态
+                html += '<p><strong>步骤1: 检查用户状态</strong></p>';
+                const currentUser = Auth.getCurrentUser();
+
+                if (!currentUser) {
+                    html += '<p class="error">❌ 用户未登录，无法测试任务创建</p>';
+                    statusDiv.innerHTML = html;
+                    return;
+                }
+
+                html += `<p class="success">✅ 当前用户: ${currentUser.username} (ID: ${currentUser.id})</p>`;
+
+                // 创建测试任务数据
+                html += '<p><strong>步骤2: 创建测试任务</strong></p>';
+                const testTaskData = {
+                    title: '测试任务 ' + new Date().toLocaleTimeString(),
+                    description: '这是一个调试测试任务',
+                    priority: 'Medium',
+                    status: 'Todo'
+                };
+
+                html += `<p>测试任务数据: ${JSON.stringify(testTaskData)}</p>`;
+
+                // 模拟调用SafeTaskManager.createTask
+                html += '<p><strong>步骤3: 调用SafeTaskManager.createTask</strong></p>';
+
+                // 检查SafeTaskManager是否存在
+                if (typeof window.SafeTaskManager === 'undefined') {
+                    // 手动创建SafeTaskManager
+                    html += '<p class="info">ℹ️ SafeTaskManager未定义，手动创建测试版本</p>';
+
+                    window.SafeTaskManager = {
+                        createTask: function(taskData, userId) {
+                            if (!taskData.title) {
+                                return { success: false, message: '请输入任务标题' };
+                            }
+
+                            if (!userId) {
+                                return { success: false, message: '用户未登录' };
+                            }
+
+                            const newTask = {
+                                id: Date.now().toString() + Math.random().toString(36).substr(2),
+                                title: taskData.title.trim(),
+                                description: taskData.description ? taskData.description.trim() : '',
+                                priority: taskData.priority || 'Medium',
+                                userId: userId,
+                                status: taskData.status || 'Todo',
+                                createdAt: new Date().toISOString()
+                            };
+
+                            try {
+                                const existingTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                                existingTasks.push(newTask);
+                                localStorage.setItem('ls_tasks', JSON.stringify(existingTasks));
+                                return { success: true, message: '任务创建成功！', task: newTask };
+                            } catch (error) {
+                                return { success: false, message: '任务创建失败，系统错误' };
+                            }
+                        }
+                    };
+                }
+
+                // 调用创建任务
+                const result = window.SafeTaskManager.createTask(testTaskData, currentUser.id);
+
+                if (result.success) {
+                    html += '<p class="success">✅ 任务创建成功！</p>';
+                    html += `<p>任务ID: ${result.task.id}</p>`;
+                    html += `<p>任务标题: ${result.task.title}</p>`;
+                    html += `<pre>${JSON.stringify(result.task, null, 2)}</pre>`;
+                } else {
+                    html += `<p class="error">❌ 任务创建失败: ${result.message}</p>`;
+                }
+
+                // 验证任务是否真的被保存
+                html += '<p><strong>步骤4: 验证任务保存</strong></p>';
+                const savedTasks = JSON.parse(localStorage.getItem('ls_tasks') || '[]');
+                const userTasks = savedTasks.filter(task => task.userId === currentUser.id);
+                html += `<p>总任务数: ${savedTasks.length}</p>`;
+                html += `<p>当前用户任务数: ${userTasks.length}</p>`;
+
+                if (userTasks.length > 0) {
+                    html += '<p class="success">✅ 任务已成功保存到localStorage</p>';
+                    const latestTask = userTasks[userTasks.length - 1];
+                    html += `<p>最新任务: ${latestTask.title} (创建于: ${new Date(latestTask.createdAt).toLocaleString()})</p>`;
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                html += `<p class="error">❌ 测试任务创建失败: ${error.message}</p>`;
+                html += `<p class="error">错误堆栈: ${error.stack}</p>`;
+                statusDiv.innerHTML = html;
+            }
+        }
+
+        function clearAuthData() {
+            const statusDiv = document.getElementById('clear-status');
+
+            try {
+                sessionStorage.removeItem('learnsync_current_user');
+                localStorage.removeItem('learnsync_current_user_remember');
+
+                statusDiv.innerHTML = '<div class="alert alert-success">✅ 认证数据已清除</div>';
+                statusDiv.innerHTML += '<p class="info">请重新登录以创建新的会话</p>';
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="alert alert-danger">❌ 清除认证数据失败: ' + error.message + '</div>';
+            }
+        }
+
+        function forceFixSession() {
+            const statusDiv = document.getElementById('clear-status');
+
+            try {
+                let html = '<p><strong>强制修复会话数据...</strong></p>';
+
+                // 获取用户列表
+                const users = Storage.get('users');
+                html += `<p>找到 ${users.length} 个用户</p>`;
+
+                if (users.length === 0) {
+                    html += '<p class="error">❌ 没有找到任何用户</p>';
+                    statusDiv.innerHTML = html;
+                    return;
+                }
+
+                // 显示用户列表供选择
+                html += '<p><strong>可用的用户:</strong></p>';
+                users.forEach((user, index) => {
+                    const hasId = user.id ? '✅' : '❌';
+                    const isActive = user.isActive ? '✅' : '❌';
+                    html += `<p>${index + 1}. ${user.username} (${user.role}) ID:${hasId} Active:${isActive}</p>`;
+                });
+
+                html += '<p><strong>自动修复第一个有效用户...</strong></p>';
+
+                // 找到第一个有ID且活跃的用户
+                let validUser = null;
+                for (let user of users) {
+                    if (user.id && user.isActive) {
+                        validUser = user;
+                        break;
+                    }
+                }
+
+                if (!validUser) {
+                    html += '<p class="error">❌ 没有找到有效的用户，尝试修复所有用户...</p>';
+                    // 为所有用户添加ID
+                    const fixedUsers = users.map((user, index) => ({
+                        ...user,
+                        id: user.id || 'user_' + Date.now() + '_' + index,
+                        isActive: true
+                    }));
+                    Storage.set('users', fixedUsers);
+                    validUser = fixedUsers[0];
+                    html += '<p class="success">✅ 已为所有用户添加ID并设置为活跃状态</p>';
+                }
+
+                if (validUser) {
+                    html += `<p class="success">✅ 选择用户: ${validUser.username} (ID: ${validUser.id})</p>`;
+
+                    // 创建会话数据
+                    const sessionData = {
+                        id: validUser.id,
+                        username: validUser.username,
+                        email: validUser.email,
+                        role: validUser.role,
+                        avatar: validUser.avatar,
+                        loginTime: new Date().toISOString(),
+                        rememberMe: false
+                    };
+
+                    // 保存到sessionStorage
+                    sessionStorage.setItem('learnsync_current_user', JSON.stringify(sessionData));
+
+                    html += '<p class="success">✅ 会话数据已修复并保存</p>';
+                    html += `<p class="info">用户 ${validUser.username} 现在可以正常使用系统</p>`;
+                    html += '<button onclick="location.reload()">重新加载页面测试</button>';
+                }
+
+                statusDiv.innerHTML = html;
+            } catch (error) {
+                statusDiv.innerHTML = '<div class="alert alert-danger">❌ 强制修复失败: ' + error.message + '</div>';
             }
         }
     </script>
