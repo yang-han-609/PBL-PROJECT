@@ -438,21 +438,29 @@ class StorageManager {
      * 创建默认用户数据
      */
     createDefaultUsers() {
+        // 为默认用户生成ID和头像
+        const adminId = this.generateId();
+        const demoId = this.generateId();
+
         const defaultUsers = [
             {
+                id: adminId,
                 username: 'admin',
                 password: '21232f297a57a5a743894a0e4a801fc3', // MD5 of 'admin'
                 email: 'admin@learnsync.com',
                 role: 'admin',
                 isActive: true,
+                avatar: `https://ui-avatars.com/api/?name=admin&background=ffc107&color=fff&size=128`,
                 createdAt: new Date().toISOString()
             },
             {
+                id: demoId,
                 username: 'demo',
                 password: 'fe01ce2a7fbac8fafaed7c982a04e229', // MD5 of 'demo'
                 email: 'demo@learnsync.com',
                 role: 'user',
                 isActive: true,
+                avatar: `https://ui-avatars.com/api/?name=demo&background=0d6efd&color=fff&size=128`,
                 createdAt: new Date().toISOString()
             }
         ];
