@@ -407,6 +407,8 @@ class StorageManager {
         } else {
             // 如果已有数据但缺少isActive字段，添加该字段
             this.addIsActiveToExistingUsers();
+            // 如果已有数据但缺少id字段，添加该字段
+            this.addIdsToExistingUsers();
         }
     }
 
@@ -435,24 +437,69 @@ class StorageManager {
     }
 
     /**
+     * 为现有用户添加id字段
+     */
+    addIdsToExistingUsers() {
+        const users = this.get('users');
+        let updated = false;
+
+        const updatedUsers = users.map(user => {
+            let updatedUser = { ...user };
+
+            if (!user.id) {
+                updatedUser.id = this.generateId();
+                updated = true;
+            }
+
+            // 如果缺少avatar字段，添加该字段
+            if (!user.avatar && user.username) {
+                updatedUser.avatar = this.generateAvatar(user.username);
+                updated = true;
+            }
+
+            return updatedUser;
+        });
+
+        if (updated) {
+            this.set('users', updatedUsers);
+            console.log('已为现有用户添加id和avatar字段');
+        }
+    }
+
+    /**
+     * 生成用户头像URL
+     * @param {string} username - 用户名
+     * @returns {string} 头像URL
+     */
+    generateAvatar(username) {
+        // 使用用户名的MD5值生成头像
+        const hash = md5(username);
+        return `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=${hash.substring(0, 6)}&color=fff&size=128`;
+    }
+
+    /**
      * 创建默认用户数据
      */
     createDefaultUsers() {
         const defaultUsers = [
             {
+                id: this.generateId(),
                 username: 'admin',
                 password: '21232f297a57a5a743894a0e4a801fc3', // MD5 of 'admin'
                 email: 'admin@learnsync.com',
                 role: 'admin',
                 isActive: true,
+                avatar: this.generateAvatar('admin'),
                 createdAt: new Date().toISOString()
             },
             {
+                id: this.generateId(),
                 username: 'demo',
                 password: 'fe01ce2a7fbac8fafaed7c982a04e229', // MD5 of 'demo'
                 email: 'demo@learnsync.com',
                 role: 'user',
                 isActive: true,
+                avatar: this.generateAvatar('demo'),
                 createdAt: new Date().toISOString()
             }
         ];
